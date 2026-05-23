@@ -33,8 +33,8 @@ function getActiveTab(pathname: string): Tab {
 export default function VaultLayout() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { isUnlocked, loading, lock, syncing } = useVault();
-  const { deviceId, ready } = useAuth();
+  const { isUnlocked, loading, lock, syncing, cloudConnected } = useVault();
+  const { deviceId } = useAuth();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -75,8 +75,8 @@ export default function VaultLayout() {
             style={[
               styles.syncPill,
               {
-                backgroundColor: deviceId ? colors.primary + "14" : colors.muted,
-                borderColor: deviceId ? colors.primary + "44" : colors.border,
+                backgroundColor: cloudConnected ? colors.primary + "14" : colors.muted,
+                borderColor: cloudConnected ? colors.primary + "44" : colors.border,
               },
             ]}
           >
@@ -84,18 +84,18 @@ export default function VaultLayout() {
               <ActivityIndicator size="small" color={colors.primary} style={{ width: 14, height: 14 }} />
             ) : (
               <Feather
-                name={deviceId ? "cloud" : "cloud-off"}
+                name={cloudConnected ? "cloud" : "cloud-off"}
                 size={12}
-                color={deviceId ? colors.primary : colors.mutedForeground}
+                color={cloudConnected ? colors.primary : colors.mutedForeground}
               />
             )}
             <Text
               style={[
                 styles.syncText,
-                { color: deviceId ? colors.primary : colors.mutedForeground },
+                { color: cloudConnected ? colors.primary : colors.mutedForeground },
               ]}
             >
-              {syncing ? "Syncing…" : deviceId ? "Backed up" : "Local only"}
+              {syncing ? "Syncing…" : cloudConnected ? "Backed up" : "Local only"}
             </Text>
           </View>
 

@@ -24,6 +24,7 @@ interface VaultContextType {
   incidents: Incident[];
   loading: boolean;
   syncing: boolean;
+  cloudConnected: boolean;
   unlock: (pin: string) => Promise<boolean>;
   lock: () => void;
   setupPin: (pin: string) => Promise<void>;
@@ -37,12 +38,13 @@ interface VaultContextType {
 const VaultContext = createContext<VaultContextType | null>(null);
 
 export function VaultProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { deviceId } = useAuth();
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [pinIsSet, setPinIsSet] = useState(false);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [cloudConnected, setCloudConnected] = useState(false);
 
   useEffect(() => {
     hasPinSet().then((has) => {
@@ -64,19 +66,19 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isUnlocked, refresh]);
 
-  // When a cloud identity is available and vault is unlocked, trigger a sync
+  // Sync as soon as we have a device ID and the vault is unlocked
   useEffect(() => {
-    if (user && isUnlocked) {
+    if (deviceId && isUnlocked) {
       syncFromCloud();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, isUnlocked]);
+  }, [deviceId, isUnlocked]);
 
   const syncFromCloud = useCallback(async () => {
-    if (!user) return;
+    if (!deviceId) return;
     setSyncing(true);
     try {
-      const cloudIncidents = await fetchIncidentsFromCloud(user.id);
+      const cloudIncidents = await fetchIncidentsFromCloud(deviceId);
       const local = await getIncidents();
       const cloudIds = new Set(cloudIncidents.map((i) => i.id));
       const localIds = new Set(local.map((i) => i.id));
@@ -85,13 +87,13 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       const localOnly = local.filter((i) => !cloudIds.has(i.id));
       for (const inc of localOnly) {
         try {
-          await pushIncidentToCloud(inc, user.id);
+          await pushIncidentToCloud(inc, deviceId);
         } catch {
-          // non-fatal
+          // non-fatal — stays in local
         }
       }
 
-      // Save cloud-only entries locally (don't touch existing local ones)
+      // Save cloud-only entries locally (additive, never overwrites)
       const cloudOnly = cloudIncidents.filter((i) => !localIds.has(i.id));
       for (const inc of cloudOnly) {
         try {
@@ -101,14 +103,15 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Refresh from local storage (now contains merged set)
+      setCloudConnected(true);
       await refresh();
     } catch (e) {
       console.warn("[VaultContext] syncFromCloud error:", e);
+      setCloudConnected(false);
     } finally {
       setSyncing(false);
     }
-  }, [user, refresh]);
+  }, [deviceId, refresh]);
 
   const unlock = useCallback(async (pin: string): Promise<boolean> => {
     try {
@@ -128,6 +131,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   const lock = useCallback(() => {
     setIsUnlocked(false);
     setIncidents([]);
+    setCloudConnected(false);
   }, []);
 
   const setupPin = useCallback(async (pin: string) => {
@@ -146,48 +150,40 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       const incident: Incident = { id, timestamp, hash, ...data };
       await saveIncident(incident);
 
-      if (user) {
-        try {
-          await pushIncidentToCloud(incident, user.id);
-        } catch {
-          // non-fatal — data is saved locally
-        }
+      // Push to cloud immediately — non-blocking, non-fatal
+      if (deviceId) {
+        pushIncidentToCloud(incident, deviceId).catch((e) =>
+          console.warn("[VaultContext] cloud push failed (will retry on next sync):", e)
+        );
       }
 
       await refresh();
       return incident;
     },
-    [refresh, user]
+    [refresh, deviceId]
   );
 
   const removeIncident = useCallback(
     async (id: string) => {
       await deleteIncident(id);
-      if (user) {
-        try {
-          await deleteIncidentFromCloud(id);
-        } catch {
-          // non-fatal
-        }
+      if (deviceId) {
+        deleteIncidentFromCloud(id).catch(() => {});
       }
       await refresh();
     },
-    [refresh, user]
+    [refresh, deviceId]
   );
 
   const wipe = useCallback(async () => {
-    if (user) {
-      try {
-        await deleteAllIncidentsFromCloud(user.id);
-      } catch {
-        // non-fatal
-      }
+    if (deviceId) {
+      deleteAllIncidentsFromCloud(deviceId).catch(() => {});
     }
     await wipeAllData();
     setIsUnlocked(false);
     setIncidents([]);
     setPinIsSet(false);
-  }, [user]);
+    setCloudConnected(false);
+  }, [deviceId]);
 
   return (
     <VaultContext.Provider
@@ -197,6 +193,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
         incidents,
         loading,
         syncing,
+        cloudConnected,
         unlock,
         lock,
         setupPin,

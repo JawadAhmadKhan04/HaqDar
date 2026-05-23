@@ -1,10 +1,10 @@
 import { supabase, SupabaseIncident } from "./supabase";
 import { Incident } from "./storage";
 
-export async function pushIncidentToCloud(incident: Incident, userId: string): Promise<void> {
+export async function pushIncidentToCloud(incident: Incident, deviceId: string): Promise<void> {
   const row: Omit<SupabaseIncident, "created_at"> = {
     id: incident.id,
-    user_id: userId,
+    device_id: deviceId,
     title: incident.title,
     narrative: incident.narrative,
     media_type: incident.mediaType,
@@ -29,11 +29,11 @@ export async function deleteIncidentFromCloud(id: string): Promise<void> {
   }
 }
 
-export async function fetchIncidentsFromCloud(userId: string): Promise<Incident[]> {
+export async function fetchIncidentsFromCloud(deviceId: string): Promise<Incident[]> {
   const { data, error } = await supabase
     .from("incidents")
     .select("*")
-    .eq("user_id", userId)
+    .eq("device_id", deviceId)
     .order("timestamp", { ascending: true });
 
   if (error) {
@@ -54,8 +54,8 @@ export async function fetchIncidentsFromCloud(userId: string): Promise<Incident[
   }));
 }
 
-export async function deleteAllIncidentsFromCloud(userId: string): Promise<void> {
-  const { error } = await supabase.from("incidents").delete().eq("user_id", userId);
+export async function deleteAllIncidentsFromCloud(deviceId: string): Promise<void> {
+  const { error } = await supabase.from("incidents").delete().eq("device_id", deviceId);
   if (error) {
     console.warn("[sync] deleteAllIncidentsFromCloud failed:", error.message);
   }

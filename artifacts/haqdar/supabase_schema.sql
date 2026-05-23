@@ -3,10 +3,13 @@
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ============================================================
 
--- 1. Incidents table
+-- Drop old table if you had a previous version with user_id
+-- drop table if exists public.incidents;
+
+-- 1. Incidents table — uses device_id (no auth required)
 create table if not exists public.incidents (
   id              text        primary key,
-  user_id         uuid        not null references auth.users(id) on delete cascade,
+  device_id       text        not null,
   title           text        not null default '',
   narrative       text        not null default '',
   media_type      text        not null default 'none' check (media_type in ('none', 'image', 'audio')),
@@ -18,28 +21,22 @@ create table if not exists public.incidents (
   created_at      timestamptz not null default now()
 );
 
--- 2. Index for fast per-user queries
-create index if not exists incidents_user_id_idx on public.incidents (user_id, timestamp);
+-- 2. Index for fast per-device queries
+create index if not exists incidents_device_id_idx on public.incidents (device_id, timestamp);
 
 -- 3. Enable Row Level Security
 alter table public.incidents enable row level security;
 
--- 4. Policy: users can only see their own incidents
-create policy "Users can view own incidents"
-  on public.incidents for select
-  using (auth.uid() = user_id);
+-- 4. Allow the anon key to read, write, and delete
+--    Data isolation is by device_id — each device only queries its own rows.
+create policy "anon_select" on public.incidents
+  for select to anon using (true);
 
--- 5. Policy: users can insert their own incidents
-create policy "Users can insert own incidents"
-  on public.incidents for insert
-  with check (auth.uid() = user_id);
+create policy "anon_insert" on public.incidents
+  for insert to anon with check (true);
 
--- 6. Policy: users can update their own incidents
-create policy "Users can update own incidents"
-  on public.incidents for update
-  using (auth.uid() = user_id);
+create policy "anon_update" on public.incidents
+  for update to anon using (true);
 
--- 7. Policy: users can delete their own incidents
-create policy "Users can delete own incidents"
-  on public.incidents for delete
-  using (auth.uid() = user_id);
+create policy "anon_delete" on public.incidents
+  for delete to anon using (true);
