@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import { useAuth } from "@/context/AuthContext";
 import LegalAdvisory from "@/components/LegalAdvisory";
 import { detectLegal } from "@/utils/legalMap";
 import { uploadMediaToStorage } from "@/utils/mediaUpload";
+import { transcribeAudio } from "@/utils/stt";
 import type { MediaItem } from "@/utils/storage";
 
 export default function LogIncidentScreen() {
@@ -43,6 +44,13 @@ export default function LogIncidentScreen() {
   const [timerRef, setTimerRef] = useState<ReturnType<typeof setInterval> | null>(null);
 
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const sttRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+
+  // STT state
+  const [sttField, setSttField] = useState<"title" | "narrative" | null>(null);
+  const [sttLoading, setSttLoading] = useState(false);
+  const sttFieldRef = useRef<"title" | "narrative" | null>(null);
+
   const legalMatches = detectLegal(narrative);
 
   // ─── Photo picker ────────────────────────────────────────────────────────
@@ -115,6 +123,53 @@ export default function LogIncidentScreen() {
     setMedia((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  // ─── STT (dictation) ──────────────────────────────────────────────────────
+  const handleSttStart = useCallback(async (field: "title" | "narrative") => {
+    if (isRecording) return; // evidence recording in progress
+    try {
+      if (Platform.OS !== "web") {
+        const { granted } = await requestRecordingPermissionsAsync();
+        if (!granted) {
+          Alert.alert("Permission needed", "Allow microphone access to use dictation.");
+          return;
+        }
+        await setIsAudioActiveAsync(true);
+      }
+      await sttRecorder.prepareToRecordAsync();
+      sttRecorder.record();
+      sttFieldRef.current = field;
+      setSttField(field);
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e) {
+      console.warn("[stt] start error:", e);
+    }
+  }, [isRecording, sttRecorder]);
+
+  const handleSttStop = useCallback(async () => {
+    const field = sttFieldRef.current;
+    setSttField(null);
+    sttFieldRef.current = null;
+    try {
+      await sttRecorder.stop();
+      const uri = sttRecorder.uri;
+      if (!uri || !field) return;
+      setSttLoading(true);
+      const transcript = await transcribeAudio(uri);
+      if (transcript) {
+        if (field === "title") {
+          setTitle((prev) => (prev ? `${prev} ${transcript}` : transcript).slice(0, 80));
+        } else {
+          setNarrative((prev) => (prev ? `${prev} ${transcript}` : transcript).slice(0, 4000));
+        }
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (e) {
+      console.warn("[stt] transcribe error:", e);
+    } finally {
+      setSttLoading(false);
+    }
+  }, [sttRecorder]);
+
   // ─── Save ────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     if (!title.trim() && !narrative.trim()) {
@@ -171,20 +226,68 @@ export default function LogIncidentScreen() {
       </Text>
 
       <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <TextInput
-          style={[styles.inputTitle, { color: colors.foreground }]}
-          placeholder="Entry title"
-          placeholderTextColor={colors.mutedForeground}
-          value={title}
-          onChangeText={setTitle}
-          maxLength={80}
-        />
+        <View style={styles.inputRow}>
+          <TextInput
+            style={[styles.inputTitle, { color: colors.foreground, flex: 1 }]}
+            placeholder="Entry title"
+            placeholderTextColor={colors.mutedForeground}
+            value={title}
+            onChangeText={setTitle}
+            maxLength={80}
+          />
+          <TouchableOpacity
+            style={[
+              styles.sttBtn,
+              {
+                backgroundColor:
+                  sttField === "title"
+                    ? colors.destructive
+                    : sttLoading && sttFieldRef.current === null
+                    ? colors.muted
+                    : colors.muted,
+              },
+            ]}
+            onPress={sttField === "title" ? handleSttStop : () => handleSttStart("title")}
+            disabled={sttLoading || isRecording || (sttField !== null && sttField !== "title")}
+            activeOpacity={0.7}
+          >
+            {sttLoading && sttField === null ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : sttField === "title" ? (
+              <Feather name="square" size={13} color="#FFF" />
+            ) : (
+              <Feather name="mic" size={13} color={colors.mutedForeground} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={[styles.field, styles.narrativeField, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.narrativeMicRow}>
+          <Text style={[styles.narrativeHint, { color: colors.mutedForeground }]}>
+            {sttField === "narrative" ? "🔴 Listening… tap ■ to finish" : "Describe what happened…"}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.sttBtn,
+              { backgroundColor: sttField === "narrative" ? colors.destructive : colors.muted },
+            ]}
+            onPress={sttField === "narrative" ? handleSttStop : () => handleSttStart("narrative")}
+            disabled={sttLoading || isRecording || (sttField !== null && sttField !== "narrative")}
+            activeOpacity={0.7}
+          >
+            {sttLoading && sttField === null ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : sttField === "narrative" ? (
+              <Feather name="square" size={13} color="#FFF" />
+            ) : (
+              <Feather name="mic" size={13} color={colors.mutedForeground} />
+            )}
+          </TouchableOpacity>
+        </View>
         <TextInput
           style={[styles.inputNarrative, { color: colors.foreground }]}
-          placeholder="Describe what happened... / واقعہ بیان کریں"
+          placeholder="واقعہ بیان کریں"
           placeholderTextColor={colors.mutedForeground}
           value={narrative}
           onChangeText={setNarrative}
@@ -329,7 +432,17 @@ const styles = StyleSheet.create({
   },
   field: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10 },
   narrativeField: { minHeight: 120 },
+  inputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   inputTitle: { fontSize: 16, fontWeight: "600" as const, paddingVertical: 4 },
+  narrativeMicRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  narrativeHint: { fontSize: 11, flex: 1 },
+  sttBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
   inputNarrative: { fontSize: 14, lineHeight: 22, paddingVertical: 4, minHeight: 90 },
   charCount: { fontSize: 11, textAlign: "right", marginTop: 4 },
   mediaRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
