@@ -4,21 +4,53 @@ import { obfuscate, deobfuscate } from "./crypto";
 const STORAGE_KEY = "hq_v1";
 const PIN_KEY = "hq_p";
 
+export interface MediaItem {
+  type: "image" | "audio";
+  filename: string;
+  uri: string;
+}
+
 export interface Incident {
   id: string;
   timestamp: string;
   title: string;
   narrative: string;
-  mediaType: "none" | "image" | "audio";
-  mediaFilename: string;
-  mediaUri?: string;
+  media: MediaItem[];
   hash: string;
   legalCategories: string[];
 }
 
+/** Migrate old single-media format to new media array format */
+function migrateIncident(raw: any): Incident {
+  if (Array.isArray(raw.media)) return raw as Incident;
+  // Old format: mediaType, mediaFilename, mediaUri
+  const media: MediaItem[] = [];
+  if (raw.mediaType && raw.mediaType !== "none" && raw.mediaFilename) {
+    media.push({
+      type: raw.mediaType as "image" | "audio",
+      filename: raw.mediaFilename,
+      uri: raw.mediaUri ?? "",
+    });
+  }
+  return {
+    id: raw.id,
+    timestamp: raw.timestamp,
+    title: raw.title,
+    narrative: raw.narrative,
+    media,
+    hash: raw.hash,
+    legalCategories: raw.legalCategories ?? [],
+  };
+}
+
 export async function saveIncident(incident: Incident): Promise<void> {
   const incidents = await getIncidents();
-  incidents.push(incident);
+  const idx = incidents.findIndex((i) => i.id === incident.id);
+  if (idx >= 0) {
+    incidents[idx] = incident;
+  } else {
+    incidents.push(incident);
+  }
   await AsyncStorage.setItem(STORAGE_KEY, obfuscate(JSON.stringify(incidents)));
 }
 
@@ -32,7 +64,8 @@ export async function getIncidents(): Promise<Incident[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
   if (!raw) return [];
   try {
-    return JSON.parse(deobfuscate(raw)) as Incident[];
+    const parsed = JSON.parse(deobfuscate(raw));
+    return (parsed as any[]).map(migrateIncident);
   } catch {
     return [];
   }

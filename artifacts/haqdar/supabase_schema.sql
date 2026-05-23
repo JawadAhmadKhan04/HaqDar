@@ -1,65 +1,44 @@
 -- ============================================================
--- HaqDar — Supabase Schema
+-- HaqDar — Supabase Schema (multi-media version)
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
+-- If upgrading from the old schema, drop first:
+--   drop table if exists public.incidents;
 -- ============================================================
 
--- Drop old table if you had a previous version
--- drop table if exists public.incidents;
-
--- 1. Incidents table — uses device_id (no auth required)
+-- 1. Incidents table
 create table if not exists public.incidents (
   id              text        primary key,
   device_id       text        not null,
   title           text        not null default '',
   narrative       text        not null default '',
-  media_type      text        not null default 'none' check (media_type in ('none', 'image', 'audio')),
-  media_filename  text        not null default '',
-  media_uri       text,
+  media           jsonb       not null default '[]',
   hash            text        not null,
   legal_categories text[]     not null default '{}',
   timestamp       timestamptz not null,
   created_at      timestamptz not null default now()
 );
 
--- 2. Index for fast per-device queries
 create index if not exists incidents_device_id_idx on public.incidents (device_id, timestamp);
 
--- 3. Enable Row Level Security
 alter table public.incidents enable row level security;
 
--- 4. Allow the anon key to read, write, and delete
-create policy "anon_select" on public.incidents
-  for select to anon using (true);
-
-create policy "anon_insert" on public.incidents
-  for insert to anon with check (true);
-
-create policy "anon_update" on public.incidents
-  for update to anon using (true);
-
-create policy "anon_delete" on public.incidents
-  for delete to anon using (true);
+create policy "anon_select" on public.incidents for select to anon using (true);
+create policy "anon_insert" on public.incidents for insert to anon with check (true);
+create policy "anon_update" on public.incidents for update to anon using (true);
+create policy "anon_delete" on public.incidents for delete to anon using (true);
 
 -- ============================================================
 -- Storage bucket for media files (images + audio)
 -- ============================================================
-
--- 5. Create the media bucket (public so images/audio URLs work directly)
 insert into storage.buckets (id, name, public)
 values ('haqdar-media', 'haqdar-media', true)
 on conflict (id) do nothing;
 
--- 6. Allow anon to upload media
 create policy "anon_media_insert" on storage.objects
-  for insert to anon
-  with check (bucket_id = 'haqdar-media');
+  for insert to anon with check (bucket_id = 'haqdar-media');
 
--- 7. Allow anon to read media
 create policy "anon_media_select" on storage.objects
-  for select to anon
-  using (bucket_id = 'haqdar-media');
+  for select to anon using (bucket_id = 'haqdar-media');
 
--- 8. Allow anon to delete their own media
 create policy "anon_media_delete" on storage.objects
-  for delete to anon
-  using (bucket_id = 'haqdar-media');
+  for delete to anon using (bucket_id = 'haqdar-media');
