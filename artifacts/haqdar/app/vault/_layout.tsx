@@ -1,16 +1,18 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { router, usePathname, Slot } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useVault } from "@/context/VaultContext";
+import { useAuth } from "@/context/AuthContext";
 
 type Tab = "index" | "log" | "dossier" | "resources";
 
@@ -25,18 +27,23 @@ function getActiveTab(pathname: string): Tab {
   if (pathname.includes("/dossier")) return "dossier";
   if (pathname.includes("/resources")) return "resources";
   if (pathname.includes("/log")) return "log";
-  if (/\/vault\/[^/]+$/.test(pathname) && !pathname.endsWith("/vault")) return "index";
   return "index";
 }
 
 export default function VaultLayout() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { isUnlocked, loading, lock } = useVault();
+  const { isUnlocked, loading, lock, syncing } = useVault();
+  const { user, signOut } = useAuth();
   const pathname = usePathname();
 
+  useEffect(() => {
+    if (!loading && !isUnlocked) {
+      router.replace("/pin");
+    }
+  }, [loading, isUnlocked]);
+
   if (!loading && !isUnlocked) {
-    router.replace("/pin");
     return null;
   }
 
@@ -45,6 +52,19 @@ export default function VaultLayout() {
 
   const navigate = (tab: Tab) => {
     router.push(tab === "index" ? "/vault" : `/vault/${tab}`);
+  };
+
+  const handleLock = async () => {
+    lock();
+  };
+
+  const handleCloudPress = () => {
+    if (user) {
+      // already signed in — sign out of cloud only, keep local data
+      router.push("/auth");
+    } else {
+      router.push("/auth");
+    }
   };
 
   return (
@@ -59,17 +79,53 @@ export default function VaultLayout() {
           },
         ]}
       >
-        <View>
+        <View style={styles.headerLeft}>
           <Text style={[styles.appTitle, { color: colors.foreground }]}>HaqDar</Text>
           <Text style={[styles.appUrdu, { color: colors.mutedForeground }]}>حق دار</Text>
         </View>
-        <TouchableOpacity
-          onPress={lock}
-          style={[styles.lockBtn, { backgroundColor: colors.secondary }]}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Feather name="lock" size={16} color={colors.foreground} />
-        </TouchableOpacity>
+
+        <View style={styles.headerRight}>
+          {/* Cloud sync indicator */}
+          <TouchableOpacity
+            style={[
+              styles.cloudBtn,
+              {
+                backgroundColor: user ? colors.primary + "18" : colors.secondary,
+                borderColor: user ? colors.primary : colors.border,
+              },
+            ]}
+            onPress={handleCloudPress}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            {syncing ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Feather
+                name={user ? "cloud" : "cloud-off"}
+                size={14}
+                color={user ? colors.primary : colors.mutedForeground}
+              />
+            )}
+            <Text
+              style={[
+                styles.cloudText,
+                { color: user ? colors.primary : colors.mutedForeground },
+              ]}
+              numberOfLines={1}
+            >
+              {user ? (user.email?.split("@")[0] ?? "Cloud") : "Local"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Lock button */}
+          <TouchableOpacity
+            onPress={handleLock}
+            style={[styles.lockBtn, { backgroundColor: colors.secondary }]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="lock" size={16} color={colors.foreground} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -123,23 +179,42 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
     borderBottomWidth: 1,
   },
+  headerLeft: { gap: 1 },
   appTitle: {
     fontSize: 20,
     fontWeight: "700" as const,
     letterSpacing: -0.3,
   },
   appUrdu: {
-    fontSize: 13,
-    marginTop: 1,
+    fontSize: 12,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  cloudBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    maxWidth: 120,
+  },
+  cloudText: {
+    fontSize: 12,
+    fontWeight: "600" as const,
   },
   lockBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
   },

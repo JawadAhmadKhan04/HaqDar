@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Platform,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -36,7 +35,8 @@ export default function PinSetupScreen() {
       return;
     }
     await setupPin(pin);
-    router.replace("/vault");
+    // After PIN setup, offer cloud backup
+    router.replace("/auth");
   };
 
   return (

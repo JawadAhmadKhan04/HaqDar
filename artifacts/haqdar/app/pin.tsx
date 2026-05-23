@@ -11,12 +11,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import PinPad from "@/components/PinPad";
 import { useVault } from "@/context/VaultContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function PinScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { unlock } = useVault();
+  const { user } = useAuth();
   const [error, setError] = useState("");
   const [attempts, setAttempts] = useState(0);
 
@@ -50,6 +52,26 @@ export default function PinScreen() {
         >
           <Feather name="x" size={18} color={colors.foreground} />
         </TouchableOpacity>
+
+        {/* Cloud sign-in shortcut */}
+        {!user && (
+          <TouchableOpacity
+            onPress={() => router.push("/auth")}
+            style={[styles.cloudBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+          >
+            <Feather name="cloud" size={14} color={colors.mutedForeground} />
+            <Text style={[styles.cloudText, { color: colors.mutedForeground }]}>Sign in</Text>
+          </TouchableOpacity>
+        )}
+
+        {user && (
+          <View style={[styles.cloudBtn, { backgroundColor: colors.primary + "18", borderColor: colors.primary }]}>
+            <Feather name="cloud" size={14} color={colors.primary} />
+            <Text style={[styles.cloudText, { color: colors.primary }]} numberOfLines={1}>
+              {user.email?.split("@")[0]}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.brand}>
@@ -59,6 +81,11 @@ export default function PinScreen() {
         <Text style={[styles.appName, { color: colors.foreground }]}>
           HaqDar / حق دار
         </Text>
+        {user && (
+          <Text style={[styles.syncNote, { color: colors.mutedForeground }]}>
+            Cloud backup active · {user.email}
+          </Text>
+        )}
       </View>
 
       <PinPad
@@ -80,6 +107,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
   backBtn: {
@@ -89,10 +117,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  cloudBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    maxWidth: 140,
+  },
+  cloudText: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+  },
   brand: {
     alignItems: "center",
     marginTop: 24,
     marginBottom: 8,
+    gap: 6,
   },
   logo: {
     width: 64,
@@ -100,10 +143,14 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    marginBottom: 6,
   },
   appName: {
     fontSize: 24,
     fontWeight: "700" as const,
+  },
+  syncNote: {
+    fontSize: 11,
+    textAlign: "center",
   },
 });
