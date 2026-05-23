@@ -57,28 +57,20 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     setIncidents(data);
   }, []);
 
-  // When unlocked, load local incidents
+  // Load incidents when vault is unlocked
   useEffect(() => {
     if (isUnlocked) {
       refresh();
     }
   }, [isUnlocked, refresh]);
 
-  // When user signs in and vault is unlocked, sync from cloud
+  // When a cloud identity is available and vault is unlocked, trigger a sync
   useEffect(() => {
     if (user && isUnlocked) {
       syncFromCloud();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isUnlocked]);
-
-  // Lock vault when user signs out
-  useEffect(() => {
-    if (!user && isUnlocked) {
-      setIsUnlocked(false);
-      setIncidents([]);
-    }
-  }, [user, isUnlocked]);
 
   const syncFromCloud = useCallback(async () => {
     if (!user) return;
@@ -87,9 +79,10 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       const cloudIncidents = await fetchIncidentsFromCloud(user.id);
       const local = await getIncidents();
       const cloudIds = new Set(cloudIncidents.map((i) => i.id));
-      const localOnly = local.filter((i) => !cloudIds.has(i.id));
+      const localIds = new Set(local.map((i) => i.id));
 
       // Push local-only entries up to cloud
+      const localOnly = local.filter((i) => !cloudIds.has(i.id));
       for (const inc of localOnly) {
         try {
           await pushIncidentToCloud(inc, user.id);
@@ -98,39 +91,38 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Merge cloud + local-only, sorted by time
-      const merged = [...cloudIncidents, ...localOnly];
-      merged.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      // Save cloud-only entries locally (don't touch existing local ones)
+      const cloudOnly = cloudIncidents.filter((i) => !localIds.has(i.id));
+      for (const inc of cloudOnly) {
+        try {
+          await saveIncident(inc);
+        } catch {
+          // non-fatal
+        }
+      }
 
-      // Save merged set locally — preserve PIN by saving incidents individually
-      // (don't call wipeAllData which also clears the PIN)
-      const currentPinHash = await getStoredPinHash();
-      await wipeAllData();
-      // Restore PIN after wipe
-      if (currentPinHash) {
-        await savePin(currentPinHash);
-        setPinIsSet(true);
-      }
-      for (const inc of merged) {
-        await saveIncident(inc);
-      }
-      setIncidents(merged);
+      // Refresh from local storage (now contains merged set)
+      await refresh();
     } catch (e) {
       console.warn("[VaultContext] syncFromCloud error:", e);
     } finally {
       setSyncing(false);
     }
-  }, [user]);
+  }, [user, refresh]);
 
   const unlock = useCallback(async (pin: string): Promise<boolean> => {
-    const stored = await getStoredPinHash();
-    if (!stored) return false;
-    const entered = await sha256(pin);
-    if (entered === stored) {
-      setIsUnlocked(true);
-      return true;
+    try {
+      const stored = await getStoredPinHash();
+      if (!stored) return false;
+      const entered = await sha256(pin);
+      if (entered === stored) {
+        setIsUnlocked(true);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   }, []);
 
   const lock = useCallback(() => {
