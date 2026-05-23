@@ -1,11 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -19,6 +18,8 @@ export default function IncidentDetailScreen() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { incidents, removeIncident } = useVault();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const incident = incidents.find((i) => i.id === id);
 
@@ -42,22 +43,10 @@ export default function IncidentDetailScreen() {
     hour: "2-digit", minute: "2-digit", second: "2-digit",
   });
 
-  const handleDelete = () => {
-    Alert.alert(
-      "Delete Entry",
-      "This will permanently delete this entry. Are you sure?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            await removeIncident(incident.id);
-            router.replace("/vault");
-          },
-        },
-      ]
-    );
+  const handleDelete = async () => {
+    setDeleting(true);
+    await removeIncident(incident.id);
+    router.replace("/vault");
   };
 
   const Row = ({ label, value }: { label: string; value: string }) => (
@@ -81,13 +70,38 @@ export default function IncidentDetailScreen() {
           {incident.title}
         </Text>
         <TouchableOpacity
-          onPress={handleDelete}
+          onPress={() => setConfirmDelete(true)}
           style={[styles.iconBtn, { backgroundColor: colors.muted }]}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         >
           <Feather name="trash-2" size={16} color={colors.destructive} />
         </TouchableOpacity>
       </View>
+
+      {/* Inline delete confirmation bar */}
+      {confirmDelete && (
+        <View style={[styles.confirmBar, { backgroundColor: "#FFF0F0", borderColor: colors.destructive }]}>
+          <Feather name="alert-triangle" size={14} color={colors.destructive} />
+          <Text style={[styles.confirmText, { color: colors.destructive }]}>
+            Delete this entry permanently?
+          </Text>
+          <View style={styles.confirmBtns}>
+            <TouchableOpacity
+              style={[styles.confirmCancelBtn, { backgroundColor: colors.secondary }]}
+              onPress={() => setConfirmDelete(false)}
+            >
+              <Text style={[styles.confirmCancelText, { color: colors.foreground }]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.confirmDeleteBtn, { backgroundColor: colors.destructive }]}
+              onPress={handleDelete}
+              disabled={deleting}
+            >
+              <Text style={styles.confirmDeleteText}>{deleting ? "Deleting…" : "Delete"}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
@@ -164,6 +178,23 @@ const styles = StyleSheet.create({
   },
   iconBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   topTitle: { flex: 1, fontSize: 16, fontWeight: "600" as const },
+  confirmBar: {
+    flexDirection: "row", alignItems: "center", flexWrap: "wrap",
+    gap: 8, paddingHorizontal: 14, paddingVertical: 10,
+    borderBottomWidth: 1.5,
+  },
+  confirmText: { fontSize: 13, fontWeight: "600" as const, flex: 1 },
+  confirmBtns: { flexDirection: "row", gap: 8 },
+  confirmCancelBtn: {
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 8,
+  },
+  confirmCancelText: { fontSize: 13, fontWeight: "600" as const },
+  confirmDeleteBtn: {
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 8,
+  },
+  confirmDeleteText: { fontSize: 13, fontWeight: "700" as const, color: "#FFFFFF" },
   content: { padding: 16, gap: 14, paddingBottom: 40 },
   card: { borderRadius: 14, borderWidth: 1, padding: 14 },
   cardLabel: { fontSize: 10, fontWeight: "700" as const, letterSpacing: 0.8, marginBottom: 10 },

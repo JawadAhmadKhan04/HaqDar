@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   Share,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
@@ -16,6 +17,8 @@ import { useVault } from "@/context/VaultContext";
 export default function DossierScreen() {
   const colors = useColors();
   const { incidents, wipe } = useVault();
+  const [confirmWipe, setConfirmWipe] = useState(false);
+  const [wiping, setWiping] = useState(false);
 
   const generated = new Date().toLocaleString("en-PK", {
     weekday: "long",
@@ -78,21 +81,9 @@ export default function DossierScreen() {
     }
   };
 
-  const handleWipe = () => {
-    Alert.alert(
-      "⚠️ Wipe All Data",
-      "This will permanently delete ALL incidents, your PIN, and reset the app. This cannot be undone.\n\nAre you absolutely sure?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Wipe Everything",
-          style: "destructive",
-          onPress: async () => {
-            await wipe();
-          },
-        },
-      ]
-    );
+  const handleWipeConfirm = async () => {
+    setWiping(true);
+    await wipe();
   };
 
   return (
@@ -202,19 +193,57 @@ export default function DossierScreen() {
           <Text style={styles.exportBtnText}>Export Dossier / فائل برآمد کریں</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.wipeBtn, { backgroundColor: "#FFF0F0", borderColor: colors.destructive }]}
-          onPress={handleWipe}
-          activeOpacity={0.85}
-        >
-          <Feather name="alert-triangle" size={16} color={colors.destructive} />
-          <Text style={[styles.wipeBtnText, { color: colors.destructive }]}>
-            Panic Reset — Wipe All Data
-          </Text>
-        </TouchableOpacity>
-        <Text style={[styles.wipeNote, { color: colors.mutedForeground }]}>
-          Instantly clears all records, PIN and resets the app.
-        </Text>
+        {!confirmWipe ? (
+          <>
+            <TouchableOpacity
+              style={[styles.wipeBtn, { backgroundColor: "#FFF0F0", borderColor: colors.destructive }]}
+              onPress={() => setConfirmWipe(true)}
+              activeOpacity={0.85}
+            >
+              <Feather name="alert-triangle" size={16} color={colors.destructive} />
+              <Text style={[styles.wipeBtnText, { color: colors.destructive }]}>
+                Panic Reset — Wipe All Data
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.wipeNote, { color: colors.mutedForeground }]}>
+              Instantly clears all records, PIN and resets the app.
+            </Text>
+          </>
+        ) : (
+          <View style={[styles.wipeConfirmBox, { backgroundColor: "#FFF0F0", borderColor: colors.destructive }]}>
+            <Feather name="alert-triangle" size={18} color={colors.destructive} />
+            <Text style={[styles.wipeConfirmTitle, { color: colors.destructive }]}>
+              Wipe everything permanently?
+            </Text>
+            <Text style={[styles.wipeConfirmSub, { color: colors.destructive + "CC" }]}>
+              All incidents, your PIN, and all data will be deleted. This cannot be undone.
+            </Text>
+            <View style={styles.wipeConfirmBtns}>
+              <TouchableOpacity
+                style={[styles.wipeConfirmCancel, { backgroundColor: colors.secondary }]}
+                onPress={() => setConfirmWipe(false)}
+                disabled={wiping}
+              >
+                <Text style={[styles.wipeConfirmCancelText, { color: colors.foreground }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.wipeConfirmGo, { backgroundColor: colors.destructive }]}
+                onPress={handleWipeConfirm}
+                disabled={wiping}
+                activeOpacity={0.85}
+              >
+                {wiping ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Feather name="trash-2" size={14} color="#FFF" />
+                )}
+                <Text style={styles.wipeConfirmGoText}>
+                  {wiping ? "Wiping…" : "Yes, wipe everything"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
 
     </ScrollView>
@@ -400,6 +429,52 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: "center",
     marginTop: -4,
+  },
+  wipeConfirmBox: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 8,
+    alignItems: "center",
+  },
+  wipeConfirmTitle: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    textAlign: "center",
+  },
+  wipeConfirmSub: {
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  wipeConfirmBtns: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  wipeConfirmCancel: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  wipeConfirmCancelText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+  },
+  wipeConfirmGo: {
+    flex: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: 10,
+  },
+  wipeConfirmGoText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700" as const,
   },
   custody: {
     flexDirection: "row",
