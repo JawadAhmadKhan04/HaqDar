@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Alert,
   Share,
-  Platform,
   ActivityIndicator,
 } from "react-native";
+import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useVault } from "@/context/VaultContext";
@@ -83,7 +83,11 @@ export default function DossierScreen() {
 
   const handleWipeConfirm = async () => {
     setWiping(true);
-    await wipe();
+    try {
+      await wipe();
+    } finally {
+      router.replace("/pin-setup");
+    }
   };
 
   return (
