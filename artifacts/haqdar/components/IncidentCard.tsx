@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import type { Incident } from "@/utils/storage";
@@ -24,6 +25,8 @@ export default function IncidentCard({ incident, onPress }: Props) {
   const dateStr = date.toLocaleDateString("en-PK", { day: "2-digit", month: "short", year: "numeric" });
   const timeStr = date.toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" });
 
+  const hasImageThumb = incident.mediaType === "image" && !!incident.mediaUri;
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -42,15 +45,32 @@ export default function IncidentCard({ incident, onPress }: Props) {
           <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
         </View>
 
-        <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>
-          {incident.title || "Untitled Entry"}
-        </Text>
+        <View style={styles.mainRow}>
+          <View style={styles.textBlock}>
+            <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>
+              {incident.title || "Untitled Entry"}
+            </Text>
 
-        {incident.narrative ? (
-          <Text style={[styles.preview, { color: colors.mutedForeground }]} numberOfLines={2}>
-            {incident.narrative}
-          </Text>
-        ) : null}
+            {incident.narrative ? (
+              <Text style={[styles.preview, { color: colors.mutedForeground }]} numberOfLines={hasImageThumb ? 1 : 2}>
+                {incident.narrative}
+              </Text>
+            ) : null}
+          </View>
+
+          {hasImageThumb ? (
+            <Image
+              source={{ uri: incident.mediaUri }}
+              style={[styles.thumb, { borderColor: colors.border }]}
+              contentFit="cover"
+              transition={150}
+            />
+          ) : incident.mediaType === "audio" ? (
+            <View style={[styles.audioThumb, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+              <Feather name="mic" size={18} color={colors.primary} />
+            </View>
+          ) : null}
+        </View>
 
         {incident.legalCategories.length > 0 ? (
           <View style={styles.tags}>
@@ -105,6 +125,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500" as const,
   },
+  mainRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  textBlock: {
+    flex: 1,
+    gap: 4,
+  },
   title: {
     fontSize: 15,
     fontWeight: "600" as const,
@@ -112,6 +141,22 @@ const styles = StyleSheet.create({
   preview: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  thumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexShrink: 0,
+  },
+  audioThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   tags: {
     flexDirection: "row",

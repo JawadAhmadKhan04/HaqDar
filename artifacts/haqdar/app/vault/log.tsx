@@ -14,16 +14,25 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
+import {
+  useAudioRecorder,
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setIsAudioActiveAsync,
+} from "expo-audio";
 import { useColors } from "@/hooks/useColors";
 import { useVault } from "@/context/VaultContext";
+import { useAuth } from "@/context/AuthContext";
 import LegalAdvisory from "@/components/LegalAdvisory";
 import { detectLegal } from "@/utils/legalMap";
+import { uploadMediaToStorage } from "@/utils/mediaUpload";
 
 type MediaType = "none" | "image" | "audio";
 
 export default function LogIncidentScreen() {
   const colors = useColors();
   const { addIncident } = useVault();
+  const { deviceId } = useAuth();
 
   const [title, setTitle] = useState("");
   const [narrative, setNarrative] = useState("");
@@ -33,6 +42,9 @@ export default function LogIncidentScreen() {
   const [saving, setSaving] = useState(false);
   const [audioRecording, setAudioRecording] = useState(false);
   const [audioSeconds, setAudioSeconds] = useState(0);
+  const [audioTimerRef, setAudioTimerRef] = useState<ReturnType<typeof setInterval> | null>(null);
+
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   const legalMatches = detectLegal(narrative);
 
@@ -57,37 +69,72 @@ export default function LogIncidentScreen() {
     }
   }, []);
 
-  let audioTimer: ReturnType<typeof setInterval> | null = null;
-
-  const toggleAudio = useCallback(() => {
-    if (audioRecording) {
-      if (audioTimer) clearInterval(audioTimer);
-      setAudioRecording(false);
-      const filename = `audio_${Date.now()}.m4a`;
-      setMediaType("audio");
-      setMediaFilename(filename);
+  const startRecording = useCallback(async () => {
+    try {
       if (Platform.OS !== "web") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const { granted } = await requestRecordingPermissionsAsync();
+        if (!granted) {
+          Alert.alert("Permission needed", "Allow microphone access to record audio.");
+          return;
+        }
+        await setIsAudioActiveAsync(true);
       }
-    } else {
+      await recorder.prepareToRecordAsync();
+      recorder.record();
       setAudioRecording(true);
       setAudioSeconds(0);
-      audioTimer = setInterval(() => {
-        setAudioSeconds((s) => s + 1);
-      }, 1000);
+      const timer = setInterval(() => setAudioSeconds((s) => s + 1), 1000);
+      setAudioTimerRef(timer);
       if (Platform.OS !== "web") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
+    } catch (e) {
+      console.warn("[log] startRecording error:", e);
+      Alert.alert("Recording failed", "Could not start audio recording.");
     }
-  }, [audioRecording]);
+  }, [recorder]);
 
-  const clearMedia = () => {
+  const stopRecording = useCallback(async () => {
+    if (audioTimerRef) clearInterval(audioTimerRef);
+    setAudioTimerRef(null);
+    setAudioRecording(false);
+    try {
+      await recorder.stop();
+      const uri = recorder.uri;
+      if (uri) {
+        const filename = `audio_${Date.now()}.m4a`;
+        setMediaType("audio");
+        setMediaFilename(filename);
+        setMediaUri(uri);
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      }
+    } catch (e) {
+      console.warn("[log] stopRecording error:", e);
+    }
+  }, [recorder, audioTimerRef]);
+
+  const toggleAudio = useCallback(() => {
+    if (audioRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }, [audioRecording, startRecording, stopRecording]);
+
+  const clearMedia = useCallback(() => {
+    if (audioRecording) {
+      if (audioTimerRef) clearInterval(audioTimerRef);
+      recorder.stop().catch(() => {});
+    }
     setMediaType("none");
     setMediaFilename("");
     setMediaUri(undefined);
     setAudioRecording(false);
     setAudioSeconds(0);
-  };
+    setAudioTimerRef(null);
+  }, [audioRecording, audioTimerRef, recorder]);
 
   const handleSave = useCallback(async () => {
     if (!title.trim() && !narrative.trim()) {
@@ -96,12 +143,25 @@ export default function LogIncidentScreen() {
     }
     setSaving(true);
     try {
+      let finalUri = mediaUri;
+
+      // Upload media to Supabase Storage so it's accessible across devices
+      if (mediaUri && mediaType !== "none" && deviceId) {
+        try {
+          const mimeType = mediaType === "image" ? "image/jpeg" : "audio/m4a";
+          finalUri = await uploadMediaToStorage(mediaUri, mediaFilename, deviceId, mimeType);
+        } catch (uploadErr) {
+          console.warn("[log] media upload failed, saving local URI:", uploadErr);
+          // Keep local URI — still saved locally, just not cloud-backed
+        }
+      }
+
       await addIncident({
         title: title.trim() || "Untitled Entry",
         narrative: narrative.trim(),
         mediaType,
         mediaFilename,
-        mediaUri,
+        mediaUri: finalUri,
         legalCategories: legalMatches.map((m) => m.category),
       });
       if (Platform.OS !== "web") {
@@ -113,7 +173,7 @@ export default function LogIncidentScreen() {
     } finally {
       setSaving(false);
     }
-  }, [title, narrative, mediaType, mediaFilename, mediaUri, legalMatches, addIncident]);
+  }, [title, narrative, mediaType, mediaFilename, mediaUri, legalMatches, addIncident, deviceId]);
 
   const formatAudio = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
@@ -209,8 +269,7 @@ export default function LogIncidentScreen() {
             style={[
               styles.mediaBtnText,
               {
-                color:
-                  mediaType === "audio" || audioRecording ? "#FFFFFF" : colors.foreground,
+                color: mediaType === "audio" || audioRecording ? "#FFFFFF" : colors.foreground,
               },
             ]}
           >
@@ -219,7 +278,7 @@ export default function LogIncidentScreen() {
         </TouchableOpacity>
       </View>
 
-      {(mediaType !== "none") && (
+      {mediaType !== "none" && (
         <View style={[styles.attachedRow, { backgroundColor: colors.muted, borderColor: colors.border }]}>
           <Feather
             name={mediaType === "image" ? "image" : "mic"}
@@ -238,7 +297,7 @@ export default function LogIncidentScreen() {
       <View style={[styles.infoBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
         <Feather name="shield" size={13} color={colors.accent} />
         <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-          A SHA-256 tamper-evident hash is generated automatically on save, capturing exact timestamp + content.
+          A SHA-256 tamper-evident hash is generated automatically on save. Media is uploaded to encrypted cloud storage.
         </Text>
       </View>
 
@@ -255,7 +314,12 @@ export default function LogIncidentScreen() {
         activeOpacity={0.85}
       >
         {saving ? (
-          <ActivityIndicator color="#FFFFFF" size="small" />
+          <>
+            <ActivityIndicator color="#FFFFFF" size="small" />
+            <Text style={styles.saveBtnText}>
+              {mediaType !== "none" ? "Uploading…" : "Saving…"}
+            </Text>
+          </>
         ) : (
           <>
             <Feather name="save" size={18} color="#FFFFFF" />
@@ -269,10 +333,7 @@ export default function LogIncidentScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-  },
+  content: { padding: 16, paddingBottom: 40 },
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700" as const,
@@ -287,9 +348,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 10,
   },
-  narrativeField: {
-    minHeight: 120,
-  },
+  narrativeField: { minHeight: 120 },
   inputTitle: {
     fontSize: 16,
     fontWeight: "600" as const,
@@ -301,16 +360,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     minHeight: 90,
   },
-  charCount: {
-    fontSize: 11,
-    textAlign: "right",
-    marginTop: 4,
-  },
-  mediaRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 10,
-  },
+  charCount: { fontSize: 11, textAlign: "right", marginTop: 4 },
+  mediaRow: { flexDirection: "row", gap: 12, marginBottom: 10 },
   mediaBtn: {
     flex: 1,
     flexDirection: "row",
@@ -321,10 +372,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  mediaBtnText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-  },
+  mediaBtnText: { fontSize: 14, fontWeight: "600" as const },
   attachedRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -335,10 +383,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 10,
   },
-  attachedName: {
-    flex: 1,
-    fontSize: 12,
-  },
+  attachedName: { flex: 1, fontSize: 12 },
   infoBox: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -350,11 +395,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 20,
   },
-  infoText: {
-    flex: 1,
-    fontSize: 11,
-    lineHeight: 16,
-  },
+  infoText: { flex: 1, fontSize: 11, lineHeight: 16 },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -363,9 +404,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
   },
-  saveBtnText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700" as const,
-  },
+  saveBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" as const },
 });

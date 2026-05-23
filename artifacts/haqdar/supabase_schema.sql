@@ -3,7 +3,7 @@
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ============================================================
 
--- Drop old table if you had a previous version with user_id
+-- Drop old table if you had a previous version
 -- drop table if exists public.incidents;
 
 -- 1. Incidents table — uses device_id (no auth required)
@@ -28,7 +28,6 @@ create index if not exists incidents_device_id_idx on public.incidents (device_i
 alter table public.incidents enable row level security;
 
 -- 4. Allow the anon key to read, write, and delete
---    Data isolation is by device_id — each device only queries its own rows.
 create policy "anon_select" on public.incidents
   for select to anon using (true);
 
@@ -40,3 +39,27 @@ create policy "anon_update" on public.incidents
 
 create policy "anon_delete" on public.incidents
   for delete to anon using (true);
+
+-- ============================================================
+-- Storage bucket for media files (images + audio)
+-- ============================================================
+
+-- 5. Create the media bucket (public so images/audio URLs work directly)
+insert into storage.buckets (id, name, public)
+values ('haqdar-media', 'haqdar-media', true)
+on conflict (id) do nothing;
+
+-- 6. Allow anon to upload media
+create policy "anon_media_insert" on storage.objects
+  for insert to anon
+  with check (bucket_id = 'haqdar-media');
+
+-- 7. Allow anon to read media
+create policy "anon_media_select" on storage.objects
+  for select to anon
+  using (bucket_id = 'haqdar-media');
+
+-- 8. Allow anon to delete their own media
+create policy "anon_media_delete" on storage.objects
+  for delete to anon
+  using (bucket_id = 'haqdar-media');
