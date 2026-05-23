@@ -25,7 +25,6 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="auth" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="pin-setup" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="pin" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="vault" options={{ headerShown: false }} />

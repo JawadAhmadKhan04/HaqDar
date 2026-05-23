@@ -34,7 +34,7 @@ export default function VaultLayout() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { isUnlocked, loading, lock, syncing } = useVault();
-  const { user, signOut } = useAuth();
+  const { deviceId, ready } = useAuth();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -43,28 +43,13 @@ export default function VaultLayout() {
     }
   }, [loading, isUnlocked]);
 
-  if (!loading && !isUnlocked) {
-    return null;
-  }
+  if (!loading && !isUnlocked) return null;
 
   const active = getActiveTab(pathname);
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   const navigate = (tab: Tab) => {
     router.push(tab === "index" ? "/vault" : `/vault/${tab}`);
-  };
-
-  const handleLock = async () => {
-    lock();
-  };
-
-  const handleCloudPress = () => {
-    if (user) {
-      // already signed in — sign out of cloud only, keep local data
-      router.push("/auth");
-    } else {
-      router.push("/auth");
-    }
   };
 
   return (
@@ -85,41 +70,37 @@ export default function VaultLayout() {
         </View>
 
         <View style={styles.headerRight}>
-          {/* Cloud sync indicator */}
-          <TouchableOpacity
+          {/* Cloud sync status pill */}
+          <View
             style={[
-              styles.cloudBtn,
+              styles.syncPill,
               {
-                backgroundColor: user ? colors.primary + "18" : colors.secondary,
-                borderColor: user ? colors.primary : colors.border,
+                backgroundColor: deviceId ? colors.primary + "14" : colors.muted,
+                borderColor: deviceId ? colors.primary + "44" : colors.border,
               },
             ]}
-            onPress={handleCloudPress}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
             {syncing ? (
-              <ActivityIndicator size="small" color={colors.primary} />
+              <ActivityIndicator size="small" color={colors.primary} style={{ width: 14, height: 14 }} />
             ) : (
               <Feather
-                name={user ? "cloud" : "cloud-off"}
-                size={14}
-                color={user ? colors.primary : colors.mutedForeground}
+                name={deviceId ? "cloud" : "cloud-off"}
+                size={12}
+                color={deviceId ? colors.primary : colors.mutedForeground}
               />
             )}
             <Text
               style={[
-                styles.cloudText,
-                { color: user ? colors.primary : colors.mutedForeground },
+                styles.syncText,
+                { color: deviceId ? colors.primary : colors.mutedForeground },
               ]}
-              numberOfLines={1}
             >
-              {user ? (user.email?.split("@")[0] ?? "Cloud") : "Local"}
+              {syncing ? "Syncing…" : deviceId ? "Backed up" : "Local only"}
             </Text>
-          </TouchableOpacity>
+          </View>
 
-          {/* Lock button */}
           <TouchableOpacity
-            onPress={handleLock}
+            onPress={lock}
             style={[styles.lockBtn, { backgroundColor: colors.secondary }]}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
@@ -197,18 +178,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  cloudBtn: {
+  syncPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
-    maxWidth: 120,
   },
-  cloudText: {
-    fontSize: 12,
+  syncText: {
+    fontSize: 11,
     fontWeight: "600" as const,
   },
   lockBtn: {

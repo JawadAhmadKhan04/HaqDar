@@ -35,8 +35,7 @@ export default function PinSetupScreen() {
       return;
     }
     await setupPin(pin);
-    // After PIN setup, offer cloud backup
-    router.replace("/auth");
+    router.replace("/vault");
   };
 
   return (
