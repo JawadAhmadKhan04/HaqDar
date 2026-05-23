@@ -5,7 +5,7 @@ const router: IRouter = Router();
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY ?? "";
 const DEEPGRAM_STT_URL =
-  "https://api.deepgram.com/v1/listen?model=nova-3&language=multi&punctuate=true&smart_format=true";
+  "https://api.deepgram.com/v1/listen?model=nova-3&language=ur&punctuate=true&smart_format=true";
 
 router.post(
   "/stt",

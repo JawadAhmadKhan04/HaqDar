@@ -15,7 +15,8 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useVault } from "@/context/VaultContext";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const _DOMAIN = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+const BASE_URL = _DOMAIN ? `https://${_DOMAIN}` : "";
 
 export default function DossierScreen() {
   const colors = useColors();
