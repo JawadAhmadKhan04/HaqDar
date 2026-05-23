@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { AudioPlayer } from "expo-audio";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -14,6 +15,7 @@ import { useColors } from "@/hooks/useColors";
 import { useVault } from "@/context/VaultContext";
 import AudioPlayerRow from "@/components/AudioPlayerRow";
 import { getLegalAdvice } from "@/utils/legalAdvisor";
+import { playTTS } from "@/utils/tts";
 import type { MediaItem } from "@/utils/storage";
 
 export default function IncidentDetailScreen() {
@@ -23,12 +25,24 @@ export default function IncidentDetailScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // TTS state
+  type TtsState = "idle" | "loading" | "playing" | "error";
+  const [ttsState, setTtsState] = useState<TtsState>("idle");
+  const soundRef = useRef<AudioPlayer | null>(null);
+
   // AI insights state
   const [aiLoading, setAiLoading] = useState(false);
   const [aiText, setAiText] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
 
   const incident = incidents.find((i) => i.id === id);
+
+  // Remove TTS player on unmount
+  useEffect(() => {
+    return () => {
+      soundRef.current?.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!incident) return;
@@ -44,6 +58,39 @@ export default function IncidentDetailScreen() {
       .finally(() => setAiLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incident?.id]);
+
+  const handleReadAloud = async () => {
+    if (!incident) return;
+
+    // Stop if already playing
+    if (ttsState === "playing") {
+      soundRef.current?.pause();
+      soundRef.current?.remove();
+      soundRef.current = null;
+      setTtsState("idle");
+      return;
+    }
+
+    setTtsState("loading");
+    try {
+      const text = [incident.title, incident.narrative].filter(Boolean).join(". ");
+      const player = await playTTS(text);
+      soundRef.current = player;
+
+      player.addListener("playbackStatusUpdate", (status) => {
+        if (status.didJustFinish) {
+          player.remove();
+          soundRef.current = null;
+          setTtsState("idle");
+        }
+      });
+
+      setTtsState("playing");
+    } catch {
+      setTtsState("error");
+      setTimeout(() => setTtsState("idle"), 3000);
+    }
+  };
 
   if (!incident) {
     return (
@@ -221,7 +268,56 @@ export default function IncidentDetailScreen() {
 
         {/* Narrative */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardLabel, { color: colors.mutedForeground }]}>NARRATIVE / بیان</Text>
+          <View style={styles.narrativeHeader}>
+            <Text style={[styles.cardLabel, { color: colors.mutedForeground }]}>NARRATIVE / بیان</Text>
+            <TouchableOpacity
+              style={[
+                styles.ttsBtn,
+                {
+                  backgroundColor:
+                    ttsState === "playing"
+                      ? colors.primary
+                      : ttsState === "error"
+                      ? "#FFF0F0"
+                      : colors.muted,
+                },
+              ]}
+              onPress={handleReadAloud}
+              disabled={ttsState === "loading" || !incident.narrative}
+              activeOpacity={0.75}
+            >
+              {ttsState === "loading" ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : ttsState === "playing" ? (
+                <Feather name="square" size={13} color="#FFFFFF" />
+              ) : ttsState === "error" ? (
+                <Feather name="alert-circle" size={13} color={colors.destructive} />
+              ) : (
+                <Feather name="volume-2" size={13} color={colors.mutedForeground} />
+              )}
+              <Text
+                style={[
+                  styles.ttsBtnText,
+                  {
+                    color:
+                      ttsState === "playing"
+                        ? "#FFFFFF"
+                        : ttsState === "error"
+                        ? colors.destructive
+                        : colors.mutedForeground,
+                  },
+                ]}
+              >
+                {ttsState === "loading"
+                  ? "Generating…"
+                  : ttsState === "playing"
+                  ? "Stop"
+                  : ttsState === "error"
+                  ? "Failed"
+                  : "Read aloud"}
+              </Text>
+            </TouchableOpacity>
+          </View>
           <Text style={[styles.narrative, { color: colors.foreground }]}>
             {incident.narrative || "(No narrative recorded)"}
           </Text>
@@ -291,7 +387,22 @@ const styles = StyleSheet.create({
   cardLabel: { fontSize: 10, fontWeight: "700" as const, letterSpacing: 0.8, marginBottom: 10 },
   evidenceImage: { width: "100%", height: 240, borderRadius: 10, backgroundColor: "#111" },
   fileNote: { fontSize: 11, marginTop: 6, textAlign: "center" },
-  narrative: { fontSize: 15, lineHeight: 24 },
+  narrative: { fontSize: 15, lineHeight: 24, marginTop: 10 },
+  narrativeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 0,
+  },
+  ttsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  ttsBtnText: { fontSize: 11, fontWeight: "600" as const },
   row: {
     flexDirection: "row", paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth, gap: 12, alignItems: "flex-start",
