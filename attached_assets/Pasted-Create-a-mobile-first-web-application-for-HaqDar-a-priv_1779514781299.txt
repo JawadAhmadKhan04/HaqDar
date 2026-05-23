@@ -1,0 +1,71 @@
+Create a mobile-first web application for "HaqDar" (a privacy-preserving legal preparedness and evidence vault for harassment and abuse survivors in Pakistan). The app must be fully responsive, mimicking a native mobile app layout (constrained viewport with a bottom navigation bar or floating controls where appropriate). It must run entirely on-device (client-side) using local storage for privacy, requiring absolutely no backend user database or registration.
+
+
+
+Implement the following core modules and features using clean, modular React component architecture:
+
+
+
+1. DUAL-MODE ACCESS (CAMOUFLAGE INTERFACE)
+
+- Default Launch State: The app must boot directly into a fully functioning, benign "Calculator" or "Memo Notepad" interface.
+
+- Secret Trigger: Implement a specific hidden interaction pattern (e.g., entering "9911=" on the calculator or holding down the notepad title header for 3 seconds) that transitions the UI into the secure HaqDar platform.
+
+- Zero-Auth Pin Set: The very first time the secret mode is accessed, prompt the user to set a local 4-digit security PIN. Subsquent entries require this PIN.
+
+
+
+2. LOCAL INCIDENT LOGGING & CRYPTO-HASHING
+
+- Multi-modal Capture UI: Create forms to log an incident using text narrative, uploading images/screenshots (mocked on the web via file inputs), or recording audio diaries (mocked via standard web mic API or a clear simulated audio component).
+
+- Automatic Tamper-Evident Hashing: When an entry is saved, capture the exact system timestamp and automatically generate a SHA-256 hash (using a client-side crypto library like CryptoJS) of the concatenated string: [Timestamp + Text Content + Media Filename]. Store this hash alongside the record.
+
+- Local Database (Data-at-Rest Security): Save all entries into browser LocalStorage/IndexedDB. Simulate local encryption by obfuscating or encrypting strings using a hardcoded or client-derived local key so that data is unreadable if inspected directly in browser dev tools.
+
+- Panic Reset: Provide a highly accessible but guarded "Wipe All Data" button that instantly clears all local storage, returning the app back to its default uninitialized camouflage state.
+
+
+
+3. KEYWORD-DRIVEN LEGAL MAPPING
+
+- Local AI Mapping Engine: Create a static client-side JSON dictionary mapping common abuse keywords to specific provisions of Pakistani law.
+
+- Triggers & Links:
+
+  * Keywords: "nude", "photo", "video", "share", "online", "facebook", "whatsapp" -> Map to "PECA 2016, Section 21 (Intimate Image Harassment) - Up to 7 years imprisonment."
+
+  * Keywords: "office", "boss", "colleague", "work", "job", "promotion" -> Map to "Protection Against Harassment of Women at the Workplace Act / FOSPAH jurisdiction."
+
+  * Keywords: "hit", "beat", "slap", "lock", "home", "husband", "father" -> Map to "Provincial Domestic Violence Acts / Pakistan Penal Code assault sections."
+
+  * Keywords: "bazaar", "street", "market", "shout", "follow", "stalk" -> Map to "PPC Section 509 (Insulting Modesty in Public Spaces)."
+
+- Real-time Suggestion Cards: As the user types their narrative, scan the text against these keywords. Display an unobtrusive "Advisory Hint" box showing the matching law. Every card must display a mandatory legal disclaimer: "This is an automated documentation aid, not official legal advice."
+
+
+
+4. EVIDENCE DOSSIER & TIMELINE EXPORT
+
+- Chronological Case File View: Create a dashboard showing all logged incidents compiled into a clean, vertical timeline sorted from oldest to newest.
+
+- Metadata Manifest Page: Build an "Export Dossier" view that generates a clean, printable layout (formatted like a legal brief) showing the narrative, media attachments, exact metadata timestamps, and the computed SHA-256 tamper-evident hashes. Include an explicit audit log section to prove the integrity of the chain of custody.
+
+
+
+5. OFFLINE EMERGENCY RESOURCE DIRECTORY
+
+- Provide a dedicated, tabbed directory screen displaying verified emergency helplines in Pakistan (e.g., Punjab Helpline: 1043, Cybercrime/FIA: 9911, FOSPAH Complaints Portal).
+
+- Numbers should use standard "tel:" links so clicking them triggers native device dialing behavior without storing internal logs.
+
+
+
+Design & UI Requirements:
+
+- Language: Bilingual presentation where possible (clear English headers with side-by-side or toggled Urdu text equivalents like "HaqDar / حق دار").
+
+- Theme: Use highly neutral, non-descript colors (like slate gray, deep blues, or whites) so that a casual glance at the screen does not immediately broadcast that it is a domestic abuse/harassment tracking application.
+
+- Deliverable: A fully interactive Single Page Application (React/Tailwind CSS preferred) executing entirely inside the browser container sandbox.

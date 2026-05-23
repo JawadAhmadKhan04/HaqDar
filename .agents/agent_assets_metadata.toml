@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "4ZDlfLdtQXDg3DlFdShQn"
+uri = "file://artifacts/haqdar/assets/images/icon.png"
+type = "image"
+title = "haqdar-calculator-icon"

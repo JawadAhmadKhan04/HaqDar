@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "HaqDar"
+version = "1.0.0"
+id = "artifacts/haqdar"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 23316
+
+[services.development]
+run = "pnpm --filter @workspace/haqdar run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/haqdar", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/haqdar", "run", "serve" ]
+
+[services.env]
+PORT = "23316"
+BASE_PATH = "/"
