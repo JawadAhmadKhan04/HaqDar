@@ -171,12 +171,6 @@ export default function ResourcesScreen() {
         </View>
       ))}
 
-      <View style={[styles.legalNote, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-        <Text style={[styles.legalNoteTitle, { color: colors.foreground }]}>Important Notice</Text>
-        <Text style={[styles.legalNoteText, { color: colors.mutedForeground }]}>
-          This directory is provided for reference only. Always verify contact information independently. HaqDar does not guarantee the accuracy of external resources. In immediate danger, call 15 (Police) or 115 (Edhi Ambulance).
-        </Text>
-      </View>
     </ScrollView>
   );
 }
