@@ -35,15 +35,15 @@ function getActiveTab(pathname: string): Tab {
 export default function VaultLayout() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { isUnlocked, loading, lock, syncing, cloudConnected } = useVault();
+  const { isUnlocked, pinIsSet, loading, lock, syncing, cloudConnected } = useVault();
   const { deviceId } = useAuth();
   const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !isUnlocked) {
-      router.replace("/pin");
+      router.replace(pinIsSet ? "/pin" : "/pin-setup");
     }
-  }, [loading, isUnlocked]);
+  }, [loading, isUnlocked, pinIsSet]);
 
   if (!loading && !isUnlocked) return null;
 

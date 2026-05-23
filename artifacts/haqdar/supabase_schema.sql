@@ -1,8 +1,16 @@
 -- ============================================================
 -- HaqDar — Supabase Schema (multi-media version)
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
--- If upgrading from the old schema, drop first:
---   drop table if exists public.incidents;
+--
+-- FRESH INSTALL: run the full file as-is.
+--
+-- UPGRADE from old single-media schema (add media column):
+--   ALTER TABLE public.incidents
+--     ADD COLUMN IF NOT EXISTS media jsonb NOT NULL DEFAULT '[]';
+--   ALTER TABLE public.incidents
+--     DROP COLUMN IF EXISTS media_type,
+--     DROP COLUMN IF EXISTS media_filename,
+--     DROP COLUMN IF EXISTS media_uri;
 -- ============================================================
 
 -- 1. Incidents table

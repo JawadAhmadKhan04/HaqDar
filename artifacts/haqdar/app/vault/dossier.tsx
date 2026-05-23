@@ -45,7 +45,9 @@ export default function DossierScreen() {
       lines.push(`Timestamp: ${inc.timestamp}`);
       lines.push(`Date: ${date.toLocaleString("en-PK")}`);
       if (inc.narrative) lines.push(`Narrative: ${inc.narrative}`);
-      if (inc.mediaFilename) lines.push(`Attachment: ${inc.mediaFilename} (${inc.mediaType})`);
+      if (inc.media.length > 0) {
+        inc.media.forEach((m) => lines.push(`Attachment: ${m.filename} (${m.type})`));
+      }
       if (inc.legalCategories.length) lines.push(`Legal Categories: ${inc.legalCategories.join(", ")}`);
       lines.push(`SHA-256 Hash: ${inc.hash}`);
       lines.push("-".repeat(60));
@@ -147,11 +149,16 @@ export default function DossierScreen() {
                     <Text style={[styles.metaKey, { color: colors.mutedForeground }]}>ISO 8601</Text>
                     <Text style={[styles.metaVal, { color: colors.foreground }]}>{inc.timestamp}</Text>
                   </View>
-                  {inc.mediaFilename ? (
+                  {inc.media.length > 0 ? (
                     <View style={styles.metaItem}>
-                      <Text style={[styles.metaKey, { color: colors.mutedForeground }]}>Attachment</Text>
+                      <Text style={[styles.metaKey, { color: colors.mutedForeground }]}>Attachments</Text>
                       <Text style={[styles.metaVal, { color: colors.foreground }]}>
-                        {inc.mediaFilename} ({inc.mediaType})
+                        {inc.media.filter((m) => m.type === "image").length > 0 &&
+                          `${inc.media.filter((m) => m.type === "image").length} photo(s)`}
+                        {inc.media.filter((m) => m.type === "image").length > 0 &&
+                          inc.media.filter((m) => m.type === "audio").length > 0 && ", "}
+                        {inc.media.filter((m) => m.type === "audio").length > 0 &&
+                          `${inc.media.filter((m) => m.type === "audio").length} audio clip(s)`}
                       </Text>
                     </View>
                   ) : null}
