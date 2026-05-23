@@ -47,6 +47,10 @@ const legalMappings: { keywords: string[]; match: LegalMatch }[] = [
 export const DISCLAIMER =
   "This is an automated documentation aid, not official legal advice. / یہ ایک خودکار دستاویزی امداد ہے، سرکاری قانونی مشورہ نہیں۔";
 
+export function getLegalMatchByCategory(category: string): LegalMatch | undefined {
+  return legalMappings.find((m) => m.match.category === category)?.match;
+}
+
 export function detectLegal(text: string): LegalMatch[] {
   if (!text || text.trim().length < 3) return [];
   const lower = text.toLowerCase();

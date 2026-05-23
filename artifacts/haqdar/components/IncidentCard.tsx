@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import type { Incident } from "@/utils/storage";
+import { getLegalMatchByCategory } from "@/utils/legalMap";
 
 interface Props {
   incident: Incident;
@@ -15,6 +16,12 @@ const MAX_THUMBS = 3;
 
 export default function IncidentCard({ incident, onPress }: Props) {
   const colors = useColors();
+
+  // Resolve the top legal match from stored categories
+  const topMatch = incident.legalCategories.length > 0
+    ? getLegalMatchByCategory(incident.legalCategories[0])
+    : undefined;
+  const extraLawCount = incident.legalCategories.length - 1;
 
   const date = new Date(incident.timestamp);
   const dateStr = date.toLocaleDateString("en-PK", { day: "2-digit", month: "short", year: "numeric" });
@@ -105,14 +112,39 @@ export default function IncidentCard({ incident, onPress }: Props) {
           )}
         </View>
 
-        {/* Legal tags */}
-        {incident.legalCategories.length > 0 && (
-          <View style={styles.tags}>
-            {incident.legalCategories.map((cat) => (
-              <View key={cat} style={[styles.tag, { backgroundColor: colors.muted }]}>
-                <Text style={[styles.tagText, { color: colors.accent }]} numberOfLines={1}>{cat}</Text>
+        {/* Legal insight strip */}
+        {topMatch && (
+          <View style={[styles.legalBox, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "30" }]}>
+            <View style={styles.legalTop}>
+              <View style={[styles.legalIconWrap, { backgroundColor: colors.primary + "22" }]}>
+                <Feather name="shield" size={12} color={colors.primary} />
               </View>
-            ))}
+              <View style={styles.legalTextBlock}>
+                <Text style={[styles.legalCategory, { color: colors.primary }]} numberOfLines={1}>
+                  {topMatch.category}
+                  {"  "}
+                  <Text style={[styles.legalUrdu, { color: colors.primary + "99" }]}>
+                    {topMatch.urduCategory}
+                  </Text>
+                </Text>
+                <Text style={[styles.legalLaw, { color: colors.foreground }]} numberOfLines={2}>
+                  {topMatch.law}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.legalBottom}>
+              <Feather name="map-pin" size={10} color={colors.mutedForeground} />
+              <Text style={[styles.legalAuthority, { color: colors.mutedForeground }]} numberOfLines={1}>
+                {topMatch.authority}
+              </Text>
+              {extraLawCount > 0 && (
+                <View style={[styles.extraBadge, { backgroundColor: colors.primary + "22" }]}>
+                  <Text style={[styles.extraBadgeText, { color: colors.primary }]}>
+                    +{extraLawCount} more
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         )}
 
@@ -159,9 +191,22 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center", gap: 2,
   },
   audioBadgeCount: { fontSize: 10, fontWeight: "700" as const },
-  tags: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 2 },
-  tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, maxWidth: 200 },
-  tagText: { fontSize: 11, fontWeight: "600" as const },
+  legalBox: {
+    borderRadius: 10, borderWidth: 1, padding: 10, gap: 6, marginTop: 2,
+  },
+  legalTop: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  legalIconWrap: {
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1,
+  },
+  legalTextBlock: { flex: 1, gap: 3 },
+  legalCategory: { fontSize: 12, fontWeight: "700" as const },
+  legalUrdu: { fontSize: 11, fontWeight: "400" as const },
+  legalLaw: { fontSize: 11, lineHeight: 16 },
+  legalBottom: { flexDirection: "row", alignItems: "center", gap: 5, paddingLeft: 32 },
+  legalAuthority: { fontSize: 11, flex: 1 },
+  extraBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  extraBadgeText: { fontSize: 10, fontWeight: "700" as const },
   hashRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 4 },
   hash: { fontSize: 10 },
 });
