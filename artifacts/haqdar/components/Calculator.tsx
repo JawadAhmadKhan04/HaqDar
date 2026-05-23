@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Platform,
   Vibration,
+  Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -111,9 +112,19 @@ export default function Calculator({ onSecretTriggered }: Props) {
           setWaitingForOperand(false);
           setSecretBuffer("");
         } else if (btn.label === "+/-") {
-          setDisplay((prev) =>
-            prev.startsWith("-") ? prev.slice(1) : "-" + prev
-          );
+          // Hidden call button — dials the number currently on screen
+          const digits = display.replace(/[^0-9+]/g, "");
+          if (digits.length > 0) {
+            if (Platform.OS !== "web") {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+            }
+            Linking.openURL(`tel:${digits}`).catch(() => {});
+          } else {
+            // Nothing typed yet — toggle sign as normal fallback
+            setDisplay((prev) =>
+              prev.startsWith("-") ? prev.slice(1) : "-" + prev
+            );
+          }
         } else if (btn.label === "%") {
           setDisplay((prev) => String(parseFloat(prev) / 100));
         }
