@@ -297,13 +297,6 @@ export default function LogIncidentScreen() {
         </View>
       )}
 
-      <View style={[styles.infoBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-        <Feather name="shield" size={13} color={colors.accent} />
-        <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-          SHA-256 hash generated on save. All media is uploaded to encrypted cloud storage.
-        </Text>
-      </View>
-
       <TouchableOpacity
         style={[styles.saveBtn, { backgroundColor: saving ? colors.secondary : colors.primary, opacity: saving ? 0.7 : 1 }]}
         onPress={handleSave}

@@ -150,21 +150,6 @@ export default function IncidentDetailScreen() {
           )}
         </View>
 
-        {/* Hash */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.hashHeader}>
-            <Feather name="shield" size={14} color={colors.accent} />
-            <Text style={[styles.cardLabel, { color: colors.mutedForeground, marginBottom: 0 }]}>
-              SHA-256 INTEGRITY HASH
-            </Text>
-          </View>
-          <Text style={[styles.hashValue, { color: colors.accent }]} selectable>
-            {incident.hash}
-          </Text>
-          <Text style={[styles.hashNote, { color: colors.mutedForeground }]}>
-            Computed from: Timestamp + Narrative + Media Filenames. Any tampering will invalidate this hash.
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );
