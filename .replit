@@ -47,6 +47,6 @@ externalPort = 3003
 
 [userenv.shared]
 EXPO_PUBLIC_SUPABASE_URL = "https://dfhzzitfjvvlgkvrajhu.supabase.co"
-EXPO_PUBLIC_OLLAMA_URL = "https://ollama.aristral.com"
+EXPO_PUBLIC_OLLAMA_URL = "https://ollama.aristral.com/api/chat"
 EXPO_PUBLIC_OLLAMA_MODEL = "ministral-3:14b-cloud"
 EXPO_PUBLIC_OLLAMA_API_KEY = "562e9779746d42349683337d650a683f.ioKlEqIee834Qi-13tEHQXEU"

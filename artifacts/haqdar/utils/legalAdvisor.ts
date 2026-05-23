@@ -41,7 +41,7 @@ export interface LegalAdvice {
 }
 
 export async function getLegalAdvice(userIssue: string): Promise<LegalAdvice> {
-  const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+  const response = await fetch(OLLAMA_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
