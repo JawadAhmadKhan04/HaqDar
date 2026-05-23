@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useColors } from "@/hooks/useColors";
 
 interface Props {
   onSecretTriggered: () => void;
@@ -57,7 +56,6 @@ const BUTTONS: CalcBtn[][] = [
 
 export default function Calculator({ onSecretTriggered }: Props) {
   const insets = useSafeAreaInsets();
-  const colors = useColors();
   const [display, setDisplay] = useState("0");
   const [prevValue, setPrevValue] = useState<number | null>(null);
   const [operator, setOperator] = useState<string | null>(null);
@@ -177,34 +175,18 @@ export default function Calculator({ onSecretTriggered }: Props) {
   const displayLen = formatDisplay(display).length;
   const fontSize = displayLen > 12 ? 36 : displayLen > 8 ? 52 : 72;
 
-  const btnBg = (type: BtnType) => {
-    if (type === "operator" || type === "equals") return colors.calcOperator;
-    if (type === "special") return colors.calcSpecial;
-    return colors.calcDigit;
-  };
-
-  const btnTextColor = (type: BtnType) => {
-    if (type === "special") return colors.calcText;
-    return colors.calcText;
-  };
-
   return (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: colors.calcBackground,
           paddingTop: Platform.OS === "web" ? 67 : insets.top,
           paddingBottom: Platform.OS === "web" ? 34 : insets.bottom,
         },
       ]}
     >
       <View style={styles.display}>
-        <Text
-          style={[styles.displayText, { fontSize, color: colors.calcDisplayText }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
+        <Text style={[styles.displayText, { fontSize }]} numberOfLines={1} adjustsFontSizeToFit>
           {formatDisplay(display)}
         </Text>
       </View>
@@ -217,7 +199,9 @@ export default function Calculator({ onSecretTriggered }: Props) {
                 style={[
                   styles.btn,
                   btn.wide && styles.btnWide,
-                  { backgroundColor: btnBg(btn.type) },
+                  btn.type === "operator" && styles.btnOperator,
+                  btn.type === "special" && styles.btnSpecial,
+                  btn.type === "equals" && styles.btnOperator,
                 ]}
                 onPress={() => handlePress(btn)}
                 activeOpacity={0.7}
@@ -225,9 +209,9 @@ export default function Calculator({ onSecretTriggered }: Props) {
                 <Text
                   style={[
                     styles.btnText,
-                    (btn.type === "operator" || btn.type === "equals") && styles.btnTextOperator,
+                    (btn.type === "operator" || btn.type === "equals") &&
+                      styles.btnTextOperator,
                     btn.type === "special" && styles.btnTextSpecial,
-                    { color: btnTextColor(btn.type) },
                   ]}
                 >
                   {btn.label}
@@ -247,6 +231,7 @@ const BTN_GAP = 12;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#1C1C1E",
     justifyContent: "flex-end",
     paddingHorizontal: 16,
   },
@@ -256,6 +241,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   displayText: {
+    color: "#FFFFFF",
     fontWeight: "200" as const,
     letterSpacing: -2,
   },
@@ -272,6 +258,7 @@ const styles = StyleSheet.create({
     width: BTN_SIZE,
     height: BTN_SIZE,
     borderRadius: BTN_SIZE / 2,
+    backgroundColor: "#3A3A3C",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -280,15 +267,24 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     paddingLeft: 28,
   },
+  btnOperator: {
+    backgroundColor: "#FF9500",
+  },
+  btnSpecial: {
+    backgroundColor: "#636366",
+  },
   btnText: {
+    color: "#FFFFFF",
     fontSize: 30,
     fontWeight: "400" as const,
   },
   btnTextOperator: {
+    color: "#FFFFFF",
     fontSize: 34,
     fontWeight: "300" as const,
   },
   btnTextSpecial: {
+    color: "#000000",
     fontSize: 26,
     fontWeight: "500" as const,
   },
