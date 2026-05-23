@@ -210,12 +210,6 @@ export default function DossierScreen() {
         </Text>
       </View>
 
-      <View style={[styles.custody, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-        <Feather name="info" size={13} color={colors.mutedForeground} />
-        <Text style={[styles.custodyText, { color: colors.mutedForeground }]}>
-          Chain of custody: Each entry's SHA-256 hash proves the data has not been modified since recording. Any change to the timestamp, narrative, or filename will produce a different hash.
-        </Text>
-      </View>
     </ScrollView>
   );
 }
