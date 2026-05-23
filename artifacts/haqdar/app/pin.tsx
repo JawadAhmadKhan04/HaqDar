@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -16,19 +16,25 @@ import { useColors } from "@/hooks/useColors";
 export default function PinScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { unlock } = useVault();
+  const { unlock, isUnlocked } = useVault();
   const [error, setError] = useState("");
   const [attempts, setAttempts] = useState(0);
 
+  // Navigate only after React has committed the isUnlocked state
+  useEffect(() => {
+    if (isUnlocked) {
+      router.replace("/vault");
+    }
+  }, [isUnlocked]);
+
   const handlePin = async (pin: string) => {
     const ok = await unlock(pin);
-    if (ok) {
-      router.replace("/vault");
-    } else {
+    if (!ok) {
       const next = attempts + 1;
       setAttempts(next);
       setError(`Incorrect PIN (attempt ${next})`);
     }
+    // success: navigation is handled by the useEffect above
   };
 
   return (
