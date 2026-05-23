@@ -14,20 +14,20 @@ import { useColors } from "@/hooks/useColors";
 import { useVault } from "@/context/VaultContext";
 import { useAuth } from "@/context/AuthContext";
 
-type Tab = "index" | "log" | "dossier" | "rights" | "resources";
+type Tab = "index" | "log" | "dossier" | "shelters" | "resources";
 
 const TABS: { name: Tab; icon: keyof typeof Feather.glyphMap; label: string }[] = [
   { name: "index", icon: "list", label: "Timeline" },
   { name: "log", icon: "plus-circle", label: "Log" },
   { name: "dossier", icon: "file-text", label: "Dossier" },
-  { name: "rights", icon: "book-open", label: "Rights" },
+  { name: "shelters", icon: "map-pin", label: "Shelters" },
   { name: "resources", icon: "phone-call", label: "Help" },
 ];
 
 function getActiveTab(pathname: string): Tab {
   if (pathname.includes("/dossier")) return "dossier";
+  if (pathname.includes("/shelters")) return "shelters";
   if (pathname.includes("/resources")) return "resources";
-  if (pathname.includes("/rights")) return "rights";
   if (pathname.includes("/log")) return "log";
   return "index";
 }
