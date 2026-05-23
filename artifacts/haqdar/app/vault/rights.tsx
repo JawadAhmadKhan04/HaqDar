@@ -5,9 +5,13 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
+import { getLegalAdvice } from "@/utils/legalAdvisor";
 
 interface Provision {
   section: string;
@@ -257,12 +261,32 @@ function RightCard({ right, colors }: { right: RightCategory; colors: any }) {
 
 export default function RightsScreen() {
   const colors = useColors();
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [advice, setAdvice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAsk = async () => {
+    if (!query.trim() || loading) return;
+    setLoading(true);
+    setAdvice(null);
+    setError(null);
+    try {
+      const result = await getLegalAdvice(query.trim());
+      setAdvice(result.text);
+    } catch (e: any) {
+      setError("Could not get advice right now. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView
       style={[styles.scroll, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.banner, { backgroundColor: "#1E293B" }]}>
         <Feather name="book-open" size={24} color="#FFFFFF" />
@@ -272,8 +296,90 @@ export default function RightsScreen() {
         </View>
       </View>
 
-      <Text style={[styles.intro, { color: colors.mutedForeground }]}>
-        You have legal protection under Pakistani law. Tap any card to explore your rights and learn what steps to take.
+      {/* AI Legal Advisor */}
+      <View style={[styles.advisorCard, { backgroundColor: colors.card, borderColor: "#4F6EF7" + "55" }]}>
+        <View style={styles.advisorHeader}>
+          <View style={[styles.advisorIcon, { backgroundColor: "#4F6EF7" + "18" }]}>
+            <Feather name="cpu" size={18} color="#4F6EF7" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.advisorTitle, { color: colors.foreground }]}>AI Legal Advisor</Text>
+            <Text style={[styles.advisorSub, { color: colors.mutedForeground }]}>
+              Describe your situation — get matched to the right law & steps
+            </Text>
+          </View>
+        </View>
+
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.background,
+              borderColor: colors.border,
+              color: colors.foreground,
+            },
+          ]}
+          placeholder="e.g. My boss keeps sending me inappropriate messages at work..."
+          placeholderTextColor={colors.mutedForeground}
+          multiline
+          numberOfLines={4}
+          value={query}
+          onChangeText={setQuery}
+          textAlignVertical="top"
+          editable={!loading}
+        />
+
+        <TouchableOpacity
+          style={[
+            styles.askBtn,
+            {
+              backgroundColor: query.trim() && !loading ? "#4F6EF7" : colors.muted,
+              opacity: query.trim() && !loading ? 1 : 0.6,
+            },
+          ]}
+          onPress={handleAsk}
+          disabled={!query.trim() || loading}
+          activeOpacity={0.8}
+        >
+          {loading ? (
+            <>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={styles.askBtnText}>Analysing…</Text>
+            </>
+          ) : (
+            <>
+              <Feather name="search" size={16} color="#FFFFFF" />
+              <Text style={styles.askBtnText}>Find My Rights</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: "#FEE2E2", borderColor: "#FECACA" }]}>
+            <Feather name="alert-triangle" size={13} color="#DC2626" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {advice && (
+          <View style={[styles.adviceBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <View style={styles.adviceHeader}>
+              <Feather name="check-circle" size={14} color="#16A34A" />
+              <Text style={[styles.adviceHeaderText, { color: "#16A34A" }]}>Legal Advice</Text>
+            </View>
+            <Text style={[styles.adviceText, { color: colors.foreground }]}>{advice}</Text>
+            <TouchableOpacity
+              style={styles.clearBtn}
+              onPress={() => { setAdvice(null); setQuery(""); }}
+            >
+              <Text style={[styles.clearBtnText, { color: colors.mutedForeground }]}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      <Text style={[styles.sectionDivider, { color: colors.mutedForeground }]}>
+        OR BROWSE YOUR RIGHTS BELOW
       </Text>
 
       {RIGHTS.map((right) => (
@@ -448,5 +554,104 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 11,
     lineHeight: 16,
+  },
+  advisorCard: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 14,
+    gap: 12,
+  },
+  advisorHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  advisorIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  advisorTitle: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+  },
+  advisorSub: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 13,
+    lineHeight: 19,
+    minHeight: 90,
+  },
+  askBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 10,
+  },
+  askBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700" as const,
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#DC2626",
+    lineHeight: 17,
+  },
+  adviceBox: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  adviceHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  adviceHeaderText: {
+    fontSize: 12,
+    fontWeight: "700" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+  },
+  adviceText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  clearBtn: {
+    alignSelf: "flex-end",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  clearBtnText: {
+    fontSize: 12,
+  },
+  sectionDivider: {
+    fontSize: 10,
+    fontWeight: "700" as const,
+    letterSpacing: 1,
+    textAlign: "center" as const,
+    marginVertical: 4,
   },
 });
