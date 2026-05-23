@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import type { Incident } from "@/utils/storage";
-import { getLegalMatchByCategory } from "@/utils/legalMap";
+import { detectLegal } from "@/utils/legalMap";
 
 interface Props {
   incident: Incident;
@@ -17,11 +17,10 @@ const MAX_THUMBS = 3;
 export default function IncidentCard({ incident, onPress }: Props) {
   const colors = useColors();
 
-  // Resolve the top legal match from stored categories
-  const topMatch = incident.legalCategories.length > 0
-    ? getLegalMatchByCategory(incident.legalCategories[0])
-    : undefined;
-  const extraLawCount = incident.legalCategories.length - 1;
+  // Live-detect from narrative + title so old entries (with empty legalCategories) also show
+  const liveMatches = detectLegal(`${incident.title} ${incident.narrative}`);
+  const topMatch = liveMatches[0];
+  const extraLawCount = liveMatches.length - 1;
 
   const date = new Date(incident.timestamp);
   const dateStr = date.toLocaleDateString("en-PK", { day: "2-digit", month: "short", year: "numeric" });

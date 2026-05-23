@@ -7,7 +7,12 @@ export interface LegalMatch {
 
 const legalMappings: { keywords: string[]; match: LegalMatch }[] = [
   {
-    keywords: ["nude", "photo", "video", "share", "online", "facebook", "whatsapp", "screenshot", "image", "post", "leak"],
+    keywords: [
+      "nude", "naked", "photo", "video", "share", "online", "facebook", "whatsapp",
+      "screenshot", "image", "post", "leak", "send", "clip", "record", "upload",
+      "intimate", "private", "tiktok", "instagram", "twitter", "snapchat", "telegram",
+      "stalk", "cyberstalking", "hack", "account", "message", "dm", "inbox",
+    ],
     match: {
       category: "Cyber / Image Harassment",
       urduCategory: "سائبر / تصویر ہراسانی",
@@ -16,16 +21,29 @@ const legalMappings: { keywords: string[]; match: LegalMatch }[] = [
     },
   },
   {
-    keywords: ["office", "boss", "colleague", "work", "job", "promotion", "workplace", "manager", "supervisor", "company"],
+    keywords: [
+      "office", "boss", "colleague", "work", "job", "promotion", "workplace",
+      "manager", "supervisor", "company", "employer", "employee", "fired", "fire",
+      "terminate", "termination", "dismissed", "dismiss", "sacked", "sack", "resign",
+      "salary", "pay", "wage", "hr", "harassment", "harass", "inappropriate",
+      "uncomfortable", "comment", "touch", "favor", "threat", "contract", "hired",
+      "interview", "intern", "staff", "department", "easypaisa", "bank", "office",
+    ],
     match: {
       category: "Workplace Harassment",
       urduCategory: "کام کی جگہ ہراسانی",
       law: "Protection Against Harassment of Women at the Workplace Act 2010 / FOSPAH jurisdiction.",
-      authority: "FOSPAH Complaints Portal",
+      authority: "FOSPAH Complaints Portal — fospah.gov.pk",
     },
   },
   {
-    keywords: ["hit", "beat", "slap", "lock", "home", "husband", "father", "punch", "kick", "threaten", "abuse", "violent", "violence"],
+    keywords: [
+      "hit", "beat", "slap", "lock", "home", "husband", "father", "punch", "kick",
+      "threaten", "abuse", "violent", "violence", "wife", "mother", "brother", "family",
+      "domestic", "house", "room", "force", "forced", "weapon", "knife", "burn",
+      "injury", "injured", "hospital", "bruise", "choke", "strangle", "rape",
+      "assault", "victim", "control", "trap", "escape",
+    ],
     match: {
       category: "Domestic Violence",
       urduCategory: "گھریلو تشدد",
@@ -34,7 +52,12 @@ const legalMappings: { keywords: string[]; match: LegalMatch }[] = [
     },
   },
   {
-    keywords: ["bazaar", "street", "market", "shout", "follow", "stalk", "grope", "touch", "public", "road"],
+    keywords: [
+      "bazaar", "street", "market", "shout", "follow", "grope", "touch", "public",
+      "road", "bus", "rickshaw", "metro", "taxi", "uber", "careem", "stop",
+      "whistled", "catcall", "lewd", "obscene", "gesture", "crowd", "unknown man",
+      "stranger", "outside", "park", "shop", "mall", "store", "school",
+    ],
     match: {
       category: "Public Harassment",
       urduCategory: "عوامی ہراسانی",
