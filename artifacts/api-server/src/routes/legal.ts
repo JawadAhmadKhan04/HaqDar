@@ -6,39 +6,32 @@ const OLLAMA_URL = process.env.EXPO_PUBLIC_OLLAMA_URL ?? "";
 const OLLAMA_API_KEY = process.env.EXPO_PUBLIC_OLLAMA_API_KEY ?? "";
 const OLLAMA_MODEL = process.env.EXPO_PUBLIC_OLLAMA_MODEL ?? "ministral-3:14b-cloud";
 
-const SYSTEM_PROMPT = `You are a Pakistani legal advisor specializing in harassment and abuse cases. You have deep expertise in three Pakistani laws:
+const SYSTEM_PROMPT = `You are a Pakistani harassment law expert. OUTPUT FORMAT IS MANDATORY.
 
-1. **PECA 2016** (Prevention of Electronic Crimes Act) — covers digital and online abuse:
-   - § 20: Online Harassment & Cyberstalking (up to 3 years)
-   - § 21: Non-Consensual Intimate Images / revenge porn (up to 5 years)
-   - § 22: Identity Spoofing / Impersonation (up to 3 years)
-   - § 23: Malicious Code / Spyware
-   - Report to: FIA Cybercrime Wing, call 9911 or visit nccf.pk
+LAW KNOWLEDGE:
+PECA 2016: §20 Cyberstalking 3yr | §21 Intimate images 5yr | §22 Impersonation 3yr → FIA 9911 / nccf.pk
+FOSPAH 2010: §2h Harassment def | §4 Inquiry Committee | §6 Ombudsman | §7 Fines Rs500k dismissal → fospah.gov.pk
+PPC: §354-A Public harassment 3yr | §509 Eve-teasing 3yr | §506 Threats 7yr | §352 Assault 1yr → Police FIR
 
-2. **FOSPAH Act 2010** (Protection Against Harassment of Women at Workplace Act) — covers workplace and institutional harassment:
-   - § 2(h): Definition of Harassment
-   - § 4: Inquiry Committee Requirement (every org must have one)
-   - § 6: Ombudsman Complaint (escalation path)
-   - § 7: Penalties (dismissal, demotion, fines up to Rs. 500,000)
-   - Report to: Your organization's Inquiry Committee, then fospah.gov.pk
+MANDATORY OUTPUT FORMAT — YOU MUST FOLLOW THIS EXACTLY:
+Line 1: • [Applicable law and section] applies — [one sentence why]
+Line 2: • Immediately [one concrete action to take right now]
+Line 3: • Report to [specific body] — [how to contact them in one sentence]
+Line 4: • [One sentence of encouragement] Log this in HaqDar.
 
-3. **Pakistan Penal Code (PPC)** — covers public spaces and verbal/physical assault:
-   - § 354-A: Sexual Harassment in Public (3 years)
-   - § 509: Insulting Modesty / Eve Teasing (3 years)
-   - § 506: Criminal Intimidation / Threats (2-7 years)
-   - § 352: Assault / Use of Force (1 year)
-   - § 290: Public Nuisance
-   - Report to: Local police station (FIR), or Judicial Magistrate if police refuse
+ABSOLUTE RULES:
+ONLY 4 lines. NO exceptions.
+NO headers, NO sub-bullets, NO numbered lists, NO markdown, NO bold, NO asterisks, NO dashes.
+Each line starts with "• " and contains exactly ONE sentence.
+DO NOT add any text before or after the 4 lines.
+DO NOT explain your reasoning.
+DO NOT use the word "Additionally".
 
-When a user describes their situation, you must:
-1. Identify which law(s) apply and which specific section(s) are most relevant
-2. Explain clearly why those sections apply to their situation
-3. Give 4-6 concrete, numbered action steps they should take immediately
-4. Keep your response compassionate, clear, and in plain language
-5. If multiple laws apply, list all of them
-6. Always end with: "You can log this incident in HaqDar to create a timestamped record."
-
-Respond only in English. Be concise but thorough. Do not give generic advice — always tie your response directly to the user's described situation.`;
+EXAMPLE OUTPUT (follow this structure exactly):
+• FOSPAH Act 2010 §2(h) applies — unwelcome sexual comments from a superior constitute workplace harassment under Pakistani law.
+• Immediately write down today's date, exact words used, and any witness names in a private note.
+• Report to your organisation's FOSPAH Inquiry Committee or escalate directly at fospah.gov.pk.
+• You are legally protected and what happened is not your fault — log this in HaqDar.`;
 
 router.post("/legal-advice", async (req, res) => {
   const { issue } = req.body as { issue?: string };
@@ -81,15 +74,25 @@ router.post("/legal-advice", async (req, res) => {
       choices?: { message?: { content?: string } }[];
     };
 
-    const text =
+    const raw: string =
       data?.message?.content ??
       data?.choices?.[0]?.message?.content ??
       "";
 
-    if (!text) {
+    if (!raw) {
       res.status(502).json({ error: "Empty response from AI" });
       return;
     }
+
+    // Strip markdown: bold/italic markers, headers, horizontal rules
+    const text = raw
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/^-{3,}$/gm, "")
+      .replace(/^---+$/gm, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .trim();
 
     res.json({ text });
   } catch (err) {

@@ -367,7 +367,29 @@ export default function RightsScreen() {
               <Feather name="check-circle" size={14} color="#16A34A" />
               <Text style={[styles.adviceHeaderText, { color: "#16A34A" }]}>Legal Advice</Text>
             </View>
-            <Text style={[styles.adviceText, { color: colors.foreground }]}>{advice}</Text>
+            {advice
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean)
+              .map((line, i) => {
+                const isBullet = line.startsWith("•");
+                const text = isBullet ? line.slice(1).trim() : line;
+                return (
+                  <View key={i} style={isBullet ? styles.bulletRow : undefined}>
+                    {isBullet && (
+                      <View style={[styles.bulletDot, { backgroundColor: "#4F6EF7" }]} />
+                    )}
+                    <Text
+                      style={[
+                        isBullet ? styles.bulletText : styles.adviceText,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      {text}
+                    </Text>
+                  </View>
+                );
+              })}
             <TouchableOpacity
               style={styles.clearBtn}
               onPress={() => { setAdvice(null); setQuery(""); }}
@@ -636,6 +658,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   adviceText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  bulletRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  bulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
+    flexShrink: 0,
+  },
+  bulletText: {
+    flex: 1,
     fontSize: 13,
     lineHeight: 20,
   },
