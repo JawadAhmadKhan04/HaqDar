@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -12,6 +13,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useVault } from "@/context/VaultContext";
 import AudioPlayerRow from "@/components/AudioPlayerRow";
+import { getLegalAdvice } from "@/utils/legalAdvisor";
 import type { MediaItem } from "@/utils/storage";
 
 export default function IncidentDetailScreen() {
@@ -21,7 +23,27 @@ export default function IncidentDetailScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // AI insights state
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiText, setAiText] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   const incident = incidents.find((i) => i.id === id);
+
+  useEffect(() => {
+    if (!incident) return;
+    const issue = [incident.title, incident.narrative].filter(Boolean).join(". ");
+    if (!issue.trim()) return;
+
+    setAiLoading(true);
+    setAiText(null);
+    setAiError(null);
+    getLegalAdvice(issue)
+      .then((res) => setAiText(res.text))
+      .catch(() => setAiError("Could not reach AI advisor. Try again later."))
+      .finally(() => setAiLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incident?.id]);
 
   if (!incident) {
     return (
@@ -48,6 +70,13 @@ export default function IncidentDetailScreen() {
     await removeIncident(incident.id);
     router.replace("/vault");
   };
+
+  // Parse "• sentence" bullets
+  const parseBullets = (text: string): string[] =>
+    text
+      .split(/(?=•)/)
+      .map((s) => s.replace(/^•\s*/, "").trim())
+      .filter(Boolean);
 
   const Row = ({ label, value }: { label: string; value: string }) => (
     <View style={[styles.row, { borderBottomColor: colors.border }]}>
@@ -104,6 +133,52 @@ export default function IncidentDetailScreen() {
       )}
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* ── AI Legal Insights ── */}
+        <View style={[styles.aiCard, { backgroundColor: colors.primary + "0D", borderColor: colors.primary + "33" }]}>
+          <View style={styles.aiHeader}>
+            <View style={[styles.aiIconWrap, { backgroundColor: colors.primary + "22" }]}>
+              <Feather name="cpu" size={14} color={colors.primary} />
+            </View>
+            <View style={styles.aiHeaderText}>
+              <Text style={[styles.aiTitle, { color: colors.primary }]}>AI Legal Insights</Text>
+              <Text style={[styles.aiSubtitle, { color: colors.mutedForeground }]}>
+                Based on your recorded narrative
+              </Text>
+            </View>
+          </View>
+
+          {aiLoading && (
+            <View style={styles.aiLoading}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.aiLoadingText, { color: colors.mutedForeground }]}>
+                Analysing your situation…
+              </Text>
+            </View>
+          )}
+
+          {aiError && !aiLoading && (
+            <View style={[styles.aiErrorRow, { borderColor: colors.border }]}>
+              <Feather name="wifi-off" size={13} color={colors.mutedForeground} />
+              <Text style={[styles.aiErrorText, { color: colors.mutedForeground }]}>{aiError}</Text>
+            </View>
+          )}
+
+          {aiText && !aiLoading && (
+            <View style={styles.aiBullets}>
+              {parseBullets(aiText).map((bullet, i) => (
+                <View key={i} style={styles.bulletRow}>
+                  <View style={[styles.bulletDot, { backgroundColor: colors.primary }]} />
+                  <Text style={[styles.bulletText, { color: colors.foreground }]}>{bullet}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <Text style={[styles.aiDisclaimer, { color: colors.mutedForeground }]}>
+            Automated aid only — not official legal advice.
+          </Text>
+        </View>
 
         {/* Photo evidence */}
         {images.length > 0 && (
@@ -185,17 +260,33 @@ const styles = StyleSheet.create({
   },
   confirmText: { fontSize: 13, fontWeight: "600" as const, flex: 1 },
   confirmBtns: { flexDirection: "row", gap: 8 },
-  confirmCancelBtn: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 8,
-  },
+  confirmCancelBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
   confirmCancelText: { fontSize: 13, fontWeight: "600" as const },
-  confirmDeleteBtn: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 8,
-  },
+  confirmDeleteBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
   confirmDeleteText: { fontSize: 13, fontWeight: "700" as const, color: "#FFFFFF" },
   content: { padding: 16, gap: 14, paddingBottom: 40 },
+
+  // AI Insights card
+  aiCard: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 12 },
+  aiHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  aiIconWrap: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  aiHeaderText: { flex: 1, gap: 2 },
+  aiTitle: { fontSize: 13, fontWeight: "700" as const },
+  aiSubtitle: { fontSize: 11 },
+  aiLoading: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
+  aiLoadingText: { fontSize: 13 },
+  aiErrorRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 4, borderTopWidth: 1 },
+  aiErrorText: { fontSize: 12, flex: 1 },
+  aiBullets: { gap: 10 },
+  bulletRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  bulletDot: { width: 7, height: 7, borderRadius: 4, marginTop: 5, flexShrink: 0 },
+  bulletText: { fontSize: 13, lineHeight: 20, flex: 1 },
+  aiDisclaimer: { fontSize: 10, fontStyle: "italic" as const, marginTop: 2 },
+
+  // Evidence & metadata cards
   card: { borderRadius: 14, borderWidth: 1, padding: 14 },
   cardLabel: { fontSize: 10, fontWeight: "700" as const, letterSpacing: 0.8, marginBottom: 10 },
   evidenceImage: { width: "100%", height: 240, borderRadius: 10, backgroundColor: "#111" },
@@ -207,7 +298,4 @@ const styles = StyleSheet.create({
   },
   rowLabel: { fontSize: 12, fontWeight: "600" as const, width: 100, flexShrink: 0 },
   rowValue: { fontSize: 12, flex: 1, lineHeight: 18 },
-  hashHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
-  hashValue: { fontSize: 11, fontFamily: "Courier", lineHeight: 18, letterSpacing: 0.5, marginBottom: 8 },
-  hashNote: { fontSize: 11, lineHeight: 16, fontStyle: "italic" as const },
 });
