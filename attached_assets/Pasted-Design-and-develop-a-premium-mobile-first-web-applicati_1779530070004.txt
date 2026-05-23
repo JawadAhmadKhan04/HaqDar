@@ -1,0 +1,314 @@
+Design and develop a premium mobile-first web application UI/UX with a sophisticated, minimal, modern aesthetic inspired by soft emerald/mint palettes and clean productivity dashboards.
+
+The goal is NOT a flashy startup landing page.
+The goal IS a polished, calming, high-trust interface system that feels intelligent, lightweight, and elegant.
+
+=========================================
+CORE UI/UX DIRECTION
+=========================================
+
+Create a highly refined interface system using:
+- Soft mint greens
+- Emerald gradients
+- Deep evergreen dark tones
+- Frosted glass surfaces
+- Spacious layouts
+- Smooth microinteractions
+- Minimal visual clutter
+- Premium typography hierarchy
+- Consistent rounded corners
+- Soft shadows only where necessary
+
+The design should feel:
+- calm
+- modern
+- intelligent
+- professional
+- interactive
+- clean
+- trustworthy
+- mobile-native
+
+Avoid:
+- overly vibrant neon colors
+- heavy skeuomorphism
+- cluttered dashboards
+- excessive shadows
+- childish UI
+- bulky cards
+- crowded spacing
+- overly animated interfaces
+
+=========================================
+COLOR SYSTEM
+=========================================
+
+Use this palette as the foundation:
+
+Light Palette:
+- Frosted Mint: #D8F3DC
+- Celadon: #B7E4C7
+- Soft Mint: #95D5B2
+- Mint Leaf: #74C69D
+- Primary Emerald: #52B788
+
+Dark Palette:
+- Sea Green: #40916C
+- Dark Emerald: #2D6A4F
+- Pine Teal: #1B4332
+- Evergreen: #081C15
+- Onyx: #080D0B
+
+UI should support BOTH:
+- Light mode
+- Dark mode
+
+Include:
+- animated toggle switch
+- smooth transition between themes
+- persisted theme preference
+- adaptive shadows and borders
+- adaptive typography contrast
+
+Dark mode should feel premium black/green, not gray.
+
+=========================================
+VISUAL STYLE
+=========================================
+
+Design language:
+- Apple-level spacing discipline
+- Stripe-inspired minimalism
+- Linear-style smoothness
+- Calm SaaS dashboard aesthetics
+- Subtle futuristic feel
+- Soft glassmorphism ONLY where useful
+
+Use:
+- backdrop blur
+- translucent panels
+- thin borders
+- layered depth
+- floating cards
+- gradient accents
+- subtle glow on active states
+
+Avoid excessive gradients.
+Everything should remain readable and clean.
+
+=========================================
+BACKGROUND SYSTEM
+=========================================
+
+Use a sophisticated animated background system:
+- particles.js or tsParticles
+- very subtle interactive particles
+- low density
+- smooth floating motion
+- mouse/touch interaction
+- soft emerald glow particles
+- performance optimized for mobile
+
+Background should NEVER distract from content.
+
+Also include:
+- soft radial gradients
+- blurred ambient glow effects
+- layered depth backgrounds
+
+=========================================
+TYPOGRAPHY
+=========================================
+
+Use modern clean typography:
+- Inter
+- Satoshi
+- SF Pro Display
+- Manrope
+
+Typography rules:
+- strong hierarchy
+- generous line spacing
+- minimal font weights
+- elegant readability
+- compact mobile optimization
+
+Buttons and headings should feel crisp and premium.
+
+=========================================
+MOBILE-FIRST REQUIREMENTS
+=========================================
+
+This is primarily a MOBILE WEB APP.
+
+Design priorities:
+- thumb-friendly interactions
+- bottom navigation support
+- responsive layouts
+- adaptive cards
+- smooth vertical scrolling
+- sticky action areas
+- optimized touch targets
+- gesture-friendly spacing
+
+The app should behave like a native mobile app.
+
+Use:
+- mobile viewport optimization
+- smooth momentum scrolling
+- responsive containers
+- fluid typography
+- collapsible sections
+- skeleton loading states
+
+=========================================
+UI COMPONENT SYSTEM
+=========================================
+
+Create a reusable design system for:
+
+- Navbar
+- Bottom navigation
+- Sidebar drawer
+- Cards
+- Floating action buttons
+- Search bars
+- Input fields
+- Dropdowns
+- Modals
+- Toast notifications
+- Tabs
+- Accordions
+- Analytics widgets
+- Tables
+- Progress indicators
+- Activity timelines
+- Charts
+- Empty states
+- Loading skeletons
+- Settings panels
+- Profile sections
+- Authentication pages
+
+Component behavior must include:
+- hover states
+- active states
+- focus states
+- disabled states
+- loading states
+- transition animations
+
+=========================================
+INTERACTIONS & ANIMATIONS
+=========================================
+
+Animations should be:
+- subtle
+- smooth
+- premium
+- responsive
+- non-distracting
+
+Use:
+- Framer Motion
+- GSAP (lightly)
+- CSS transitions
+- spring animations
+
+Include:
+- page transitions
+- floating hover effects
+- animated toggles
+- smooth modal transitions
+- soft button feedback
+- scroll reveal animations
+- animated gradients
+- microinteractions
+
+Avoid:
+- flashy motion
+- long animation delays
+- excessive parallax
+
+=========================================
+FULLSTACK UI/UX EXPECTATIONS
+=========================================
+
+Focus heavily on:
+- frontend architecture
+- reusable components
+- scalable design system
+- accessibility
+- performance
+- maintainability
+- mobile optimization
+- clean state management
+- modern UI patterns
+
+Frontend stack preference:
+- React / Next.js
+- Tailwind CSS
+- Framer Motion
+- TypeScript
+- shadcn/ui
+- Zustand or Context API
+- tsParticles
+
+Backend compatibility:
+- REST APIs
+- JWT auth flows
+- real-time notifications
+- websocket-ready architecture
+
+=========================================
+UX PRINCIPLES
+=========================================
+
+The app must prioritize:
+- simplicity
+- clarity
+- visual hierarchy
+- minimal cognitive load
+- intuitive navigation
+- accessibility
+- fast interactions
+- seamless onboarding
+- predictable flows
+
+Every screen should feel:
+- breathable
+- organized
+- intentional
+- efficient
+
+=========================================
+ACCESSIBILITY
+=========================================
+
+Ensure:
+- WCAG-compliant contrast
+- keyboard accessibility
+- screen reader support
+- semantic HTML
+- visible focus indicators
+- reduced motion support
+- adaptive font scaling
+
+=========================================
+FINAL GOAL
+=========================================
+
+Build a sophisticated mobile-first UI system that feels:
+- elegant
+- futuristic
+- calming
+- premium
+- interactive
+- modern
+- scalable
+- production-ready
+
+The experience should combine:
+minimalism + subtle futuristic aesthetics + premium usability.
+
+The interface should feel like a high-end modern SaaS mobile app with a refined emerald/mint identity system.
