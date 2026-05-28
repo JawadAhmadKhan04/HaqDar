@@ -1,6 +1,6 @@
 # HaqDar — حق دار
 
-**A privacy-first mobile safety app for women in Pakistan to securely document harassment, access legal guidance, and find emergency help; hidden inside a working calculator.**
+**A privacy-first mobile safety app for men and women in Pakistan to securely document harassment, access legal guidance, and find emergency help; hidden inside a working calculator.**
 
 ---
 
@@ -67,7 +67,7 @@ All media is uploaded to secure cloud storage organised by device ID and timesta
 ### 5. Legal Rights & AI Advisor
 A two-part screen:
 
-**Law Library** : plain-language summaries of the key Pakistani laws that protect women:
+**Law Library** : plain-language summaries of the key Pakistani laws that protect the victims of abuse:
 - PECA 2016 (cyberstalking, intimate images, impersonation)
 - FOSPAH 2010 (workplace harassment ombudsman)
 - PPC §354-A / §509 / §506 / §352 (public harassment, threats, assault)
@@ -191,5 +191,5 @@ pnpm run typecheck
 
 ## Name
 
-**HaqDar** (حق دار) is Urdu for *"one who deserves rights"* — affirming that every woman has the right to safety, justice, and to be heard.
+**HaqDar** (حق دار) is Urdu for *"one who deserves rights"* — affirming that every person has the right to safety, justice, and to be heard.
 
